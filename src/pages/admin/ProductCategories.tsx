@@ -260,16 +260,43 @@ export default function AdminProductCategories() {
                   key={c._id}
                   className="border-t border-white/5 hover:bg-white/5"
                 >
-                  <td className="px-4 py-3 text-white">{c.title}</td>
+                  {/* ✅ Title: click để xem chi tiết */}
+                  <td className="px-4 py-3">
+                    {c.slug ? (
+                      <Link
+                        to={`/admin/categories/${c.slug}`}
+                        className="font-medium text-white hover:underline"
+                      >
+                        {c.title}
+                      </Link>
+                    ) : (
+                      <span className="text-white">{c.title}</span>
+                    )}
+                  </td>
+
                   <td className="px-4 py-3 text-white">
                     {c.description || "-"}
                   </td>
+
                   <td className="px-4 py-3">
                     <CategoryStatusBadge
                       status={(c.status ?? "inactive") as ProductCategoryStatus}
                     />
                   </td>
-                  <td className="px-4 py-3 text-white">{c.slug || "-"}</td>
+
+                  {/* ✅ Slug: click để xem chi tiết */}
+                  <td className="px-4 py-3">
+                    {c.slug ? (
+                      <Link
+                        to={`/admin/categories/${c.slug}`}
+                        className="text-white/80 hover:underline"
+                      >
+                        {c.slug}
+                      </Link>
+                    ) : (
+                      <span className="text-white/60">-</span>
+                    )}
+                  </td>
 
                   <td className="px-4 py-3 text-right">
                     <button

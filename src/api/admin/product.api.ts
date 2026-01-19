@@ -1,5 +1,5 @@
 import baseApi from "../../api/baseApi";
-import type { ProductListItem } from "../../types/product";
+import type { ProductDetail, ProductListItem } from "../../types/product";
 
 /* =========================
  * LIST PRODUCTS
@@ -30,27 +30,6 @@ export type SizeItemApi = {
   freeSize?: boolean;
   size: string;
   type: string;
-};
-
-export type ProductDetail = {
-  _id: string;
-  title: string;
-  description: string;
-  price: number;
-  product_category_id: string;
-  images: string[];
-  stock: number;
-  discount?: number;
-  size: SizeItemApi[];
-  status: ProductStatus;
-  color: string[];
-  deleted: boolean;
-  slug: string;
-
-  createdAt?: string;
-  updatedAt?: string;
-  titleNomalized?: string;
-  __v?: number;
 };
 
 export type ApiResponse<T> = {

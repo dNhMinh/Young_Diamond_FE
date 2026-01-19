@@ -26,7 +26,7 @@ export interface ProductDetail {
   product_category_id: string;
   images: string[];
   stock: number;
-  discount: number;
+  discount?: number;
   size: ProductSize[];
   status: "active" | "inactive" | "out_of_stock";
   slug: string;
