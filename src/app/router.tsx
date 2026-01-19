@@ -7,6 +7,8 @@ import RequireGuest from "../routes/RequireGuest";
 import AdminLayout from "../layouts/AdminLayout";
 import ProductDetailPage from "../pages/admin/ProductDetail";
 import TrashProducts from "../pages/admin/TrashProducts";
+import AdminProductCategories from "../pages/admin/ProductCategories";
+import TrashProductCategories from "../pages/admin/TrashProductCategories";
 
 export const router = createBrowserRouter([
   {
@@ -46,6 +48,9 @@ export const router = createBrowserRouter([
         path: "products/trash",
         element: <TrashProducts />,
       },
+      { path: "categories", element: <AdminProductCategories /> },
+      { path: "categories/trash", element: <TrashProductCategories /> },
+
       // sau này thêm:
       // { path: "categories", element: <AdminCategories /> },
       // { path: "orders", element: <AdminOrders /> },
