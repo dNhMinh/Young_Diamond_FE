@@ -1,18 +1,107 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  createProductApi,
   getAdminProductsApi,
+  getProductDetailApi,
   softDeleteProductApi,
+  updateProductApi,
+  type UpdateProductPayload,
 } from "../../api/admin/product.api";
-import type { ProductListItem } from "../../types/product";
 import { Link } from "react-router-dom";
+import ProductFormModal, {
+  type ProductFormValues,
+  type SizeItem,
+} from "../../components/admin/ProductFormModal";
+import type { ProductListItem } from "../../types/product";
+
+type ProductStatusFilter = "all" | "active" | "inactive" | "out_of_stock";
+
+/** ===== helpers: build diff payload (only changed fields) ===== */
+const trim = (s: unknown) => (typeof s === "string" ? s.trim() : s);
+
+const normalizeStringArray = (arr?: string[]) =>
+  (arr ?? []).map((x) => String(x).trim()).filter(Boolean);
+
+const normalizeSizeArray = (arr?: SizeItem[]) =>
+  (arr ?? []).map((s) => ({
+    freeSize: Boolean(s.freeSize),
+    size: String(s.size ?? "").trim(),
+    type: String(s.type ?? "").trim(),
+  }));
+
+const deepEqual = (a: unknown, b: unknown) =>
+  JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * Create diff payload between initial and current.
+ * Return Partial payload compatible with backend update.
+ */
+function buildProductDiff(
+  initial: ProductFormValues,
+  current: ProductFormValues,
+): UpdateProductPayload {
+  const diff: UpdateProductPayload = {};
+
+  // primitive fields
+  if (trim(current.title) !== trim(initial.title)) diff.title = current.title;
+  if (trim(current.description) !== trim(initial.description))
+    diff.description = current.description;
+
+  if (Number(current.price) !== Number(initial.price))
+    diff.price = current.price;
+  if (Number(current.stock) !== Number(initial.stock))
+    diff.stock = current.stock;
+
+  // discount: treat as number, allow 0
+  if (Number(current.discount ?? 0) !== Number(initial.discount ?? 0))
+    diff.discount = current.discount ?? 0;
+
+  // status
+  if (current.status !== initial.status) diff.status = current.status;
+
+  // category
+  if (current.product_category_id !== initial.product_category_id)
+    diff.product_category_id = current.product_category_id;
+
+  // arrays
+  const curImages = normalizeStringArray(current.images);
+  const initImages = normalizeStringArray(initial.images);
+  if (!deepEqual(curImages, initImages)) diff.images = curImages;
+
+  const curColors = normalizeStringArray(current.color);
+  const initColors = normalizeStringArray(initial.color);
+  if (!deepEqual(curColors, initColors)) diff.color = curColors;
+
+  const curSize = normalizeSizeArray(current.size);
+  const initSize = normalizeSizeArray(initial.size);
+  if (!deepEqual(curSize, initSize)) diff.size = curSize;
+
+  return diff;
+}
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<ProductListItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchKey, setSearchKey] = useState("");
-  type ProductStatus = "all" | "active" | "inactive" | "out_of_stock";
 
-  const [status, setStatus] = useState<ProductStatus>("all");
+  const [searchKey, setSearchKey] = useState("");
+  const [status, setStatus] = useState<ProductStatusFilter>("all");
+
+  // modal (create/edit)
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  const [submitting, setSubmitting] = useState(false);
+
+  // edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [openingSlug, setOpeningSlug] = useState<string | null>(null);
+
+  const [initialValues, setInitialValues] = useState<
+    Partial<ProductFormValues> | undefined
+  >(undefined);
+
+  // store full initial (normalized) to compute diff
+  const [initialEditValues, setInitialEditValues] =
+    useState<ProductFormValues | null>(null);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -22,7 +111,7 @@ export default function AdminProducts() {
         status: status === "all" ? undefined : status,
         deleted: false,
       });
-      setProducts(res.data.data);
+      setProducts(res.data.data ?? []);
     } catch (error) {
       console.error("Fetch products failed", error);
       setProducts([]);
@@ -33,6 +122,7 @@ export default function AdminProducts() {
 
   useEffect(() => {
     fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchKey, status]);
 
   const handleSoftDelete = async (productId: string) => {
@@ -43,9 +133,107 @@ export default function AdminProducts() {
       await softDeleteProductApi(productId);
       fetchProducts();
     } catch (error) {
+      console.error(error);
       alert("Xóa tạm sản phẩm thất bại");
     }
   };
+
+  const openCreate = () => {
+    setModalMode("create");
+    setEditingId(null);
+    setInitialValues(undefined);
+    setInitialEditValues(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = async (slug: string) => {
+    setOpeningSlug(slug);
+    try {
+      const res = await getProductDetailApi(slug);
+      const p = res.data.data;
+
+      const mappedSize: SizeItem[] = (p.size ?? []).map((s) => ({
+        freeSize: Boolean(s.freeSize),
+        size: s.size ?? "",
+        type: s.type ?? "",
+      }));
+
+      const full: ProductFormValues = {
+        title: p.title ?? "",
+        description: p.description ?? "",
+        price: Number(p.price ?? 0),
+        product_category_id: p.product_category_id ?? "",
+        images: p.images ?? [],
+        stock: Number(p.stock ?? 0),
+        discount: Number(p.discount ?? 0),
+        status: p.status,
+        color: p.color ?? [],
+        size: mappedSize.length
+          ? mappedSize
+          : [{ freeSize: false, size: "M", type: "standard" }],
+      };
+
+      setEditingId(p._id);
+      setInitialValues(full);
+      setInitialEditValues(full);
+
+      setModalMode("edit");
+      setModalOpen(true);
+    } catch (e) {
+      console.error(e);
+      alert("Không lấy được dữ liệu sản phẩm để sửa");
+    } finally {
+      setOpeningSlug(null);
+    }
+  };
+
+  const handleSubmit = async (values: ProductFormValues) => {
+    setSubmitting(true);
+    try {
+      if (modalMode === "create") {
+        const res = await createProductApi(values);
+        alert(res.data.message || "Tạo sản phẩm thành công");
+      } else {
+        if (!editingId) {
+          alert("Thiếu product_id để cập nhật");
+          return;
+        }
+        if (!initialEditValues) {
+          alert("Thiếu dữ liệu ban đầu để so sánh (diff)");
+          return;
+        }
+
+        const diff = buildProductDiff(initialEditValues, values);
+
+        // nếu không đổi gì thì khỏi gọi API
+        if (Object.keys(diff).length === 0) {
+          alert("Không có thay đổi nào để cập nhật");
+          setModalOpen(false);
+          return;
+        }
+
+        const res = await updateProductApi(editingId, diff);
+        alert(res.data.message || "Cập nhật sản phẩm thành công");
+      }
+
+      setModalOpen(false);
+      fetchProducts();
+    } catch (e) {
+      console.error(e);
+      alert(
+        modalMode === "create"
+          ? "Tạo sản phẩm thất bại"
+          : "Cập nhật sản phẩm thất bại",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isRowOpening = useMemo(
+    () => (slug: string) => openingSlug === slug,
+    [openingSlug],
+  );
 
   return (
     <div>
@@ -61,7 +249,10 @@ export default function AdminProducts() {
             Trash
           </Link>
 
-          <button className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-gray-200">
+          <button
+            onClick={openCreate}
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-gray-200"
+          >
             Add Product
           </button>
         </div>
@@ -78,7 +269,7 @@ export default function AdminProducts() {
 
         <select
           value={status}
-          onChange={(e) => setStatus(e.target.value as ProductStatus)}
+          onChange={(e) => setStatus(e.target.value as ProductStatusFilter)}
           className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm text-white"
         >
           <option value="all">All status</option>
@@ -86,12 +277,6 @@ export default function AdminProducts() {
           <option value="inactive">Inactive</option>
           <option value="out_of_stock">Out of stock</option>
         </select>
-        {/* <button
-          onClick={fetchProducts}
-          className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
-        >
-          Apply
-        </button> */}
       </div>
 
       {/* Table */}
@@ -136,18 +321,28 @@ export default function AdminProducts() {
                       />
                     </Link>
                   </td>
+
                   <td className="px-4 py-3 text-white">{product.title}</td>
+
                   <td className="px-4 py-3 text-white">
                     {product.price.toLocaleString()}₫
                   </td>
+
                   <td className="px-4 py-3 text-white">{product.stock}</td>
+
                   <td className="px-4 py-3">
                     <StatusBadge status={product.status} />
                   </td>
+
                   <td className="px-4 py-3 text-right">
-                    <button className="mr-3 text-blue-400 hover:underline">
-                      Edit
+                    <button
+                      onClick={() => openEdit(product.slug)}
+                      disabled={isRowOpening(product.slug)}
+                      className="mr-3 text-blue-400 hover:underline disabled:opacity-60"
+                    >
+                      {isRowOpening(product.slug) ? "Loading..." : "Edit"}
                     </button>
+
                     <button
                       onClick={() => handleSoftDelete(product._id)}
                       className="text-red-400 hover:underline"
@@ -161,6 +356,15 @@ export default function AdminProducts() {
           </tbody>
         </table>
       </div>
+
+      <ProductFormModal
+        open={modalOpen}
+        mode={modalMode}
+        initialValues={initialValues}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleSubmit}
+        submitting={submitting}
+      />
     </div>
   );
 }

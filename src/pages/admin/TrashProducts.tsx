@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   getAdminProductsApi,
   restoreProductApi,
+  hardDeleteProductApi,
 } from "../../api/admin/product.api";
 import type { ProductListItem } from "../../types/product";
 import { Link } from "react-router-dom";
@@ -18,7 +19,8 @@ export default function TrashProducts() {
         searchKey: searchKey || undefined,
         deleted: true,
       });
-      setProducts(res.data.data);
+
+      setProducts(res.data.data ?? []);
     } catch (error) {
       console.error("Fetch trash products failed", error);
       setProducts([]);
@@ -32,14 +34,30 @@ export default function TrashProducts() {
   }, [searchKey]);
 
   const handleRestore = async (productId: string) => {
-    const confirmRestore = confirm("Bạn có chắc muốn khôi phục sản phẩm này?");
-    if (!confirmRestore) return;
+    const ok = confirm("Bạn có chắc muốn khôi phục sản phẩm này?");
+    if (!ok) return;
 
     try {
       await restoreProductApi(productId);
       fetchTrashProducts();
     } catch (error) {
+      console.error("Restore failed", error);
       alert("Khôi phục sản phẩm thất bại");
+    }
+  };
+
+  const handleHardDelete = async (productId: string) => {
+    const ok = confirm(
+      "XÓA VĨNH VIỄN sản phẩm này? Hành động này không thể khôi phục.",
+    );
+    if (!ok) return;
+
+    try {
+      await hardDeleteProductApi(productId);
+      fetchTrashProducts();
+    } catch (error) {
+      console.error("Hard delete failed", error);
+      alert("Xóa vĩnh viễn sản phẩm thất bại");
     }
   };
 
@@ -122,6 +140,7 @@ export default function TrashProducts() {
                   <td className="px-4 py-3 text-white">
                     {product.price.toLocaleString()}₫
                   </td>
+
                   <td className="px-4 py-3 text-white">{product.stock}</td>
 
                   <td className="px-4 py-3">
@@ -131,12 +150,21 @@ export default function TrashProducts() {
                   </td>
 
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleRestore(product._id)}
-                      className="text-green-400 hover:underline"
-                    >
-                      Restore
-                    </button>
+                    <div className="flex justify-end gap-4">
+                      <button
+                        onClick={() => handleRestore(product._id)}
+                        className="text-green-400 hover:underline"
+                      >
+                        Restore
+                      </button>
+
+                      <button
+                        onClick={() => handleHardDelete(product._id)}
+                        className="text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
