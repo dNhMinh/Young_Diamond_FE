@@ -11,6 +11,8 @@ import AdminProductCategories from "../pages/admin/ProductCategories";
 import TrashProductCategories from "../pages/admin/TrashProductCategories";
 import ProductCategoryDetail from "../pages/admin/ProductCategoryDetail";
 import AdminReviews from "../pages/admin/AdminReviews";
+import AdminOrders from "../pages/admin/AdminOrders";
+import OrderDetailPage from "../pages/admin/OrderDetailPage";
 
 export const router = createBrowserRouter([
   {
@@ -54,6 +56,8 @@ export const router = createBrowserRouter([
       { path: "categories/trash", element: <TrashProductCategories /> },
       { path: "categories/:slug", element: <ProductCategoryDetail /> },
       { path: "reviews", element: <AdminReviews /> },
+      { path: "orders", element: <AdminOrders /> },
+      { path: "orders/:orderId", element: <OrderDetailPage /> },
 
       // sau này thêm:
       // { path: "categories", element: <AdminCategories /> },
