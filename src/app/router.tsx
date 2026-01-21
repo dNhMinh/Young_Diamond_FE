@@ -10,6 +10,7 @@ import TrashProducts from "../pages/admin/TrashProducts";
 import AdminProductCategories from "../pages/admin/ProductCategories";
 import TrashProductCategories from "../pages/admin/TrashProductCategories";
 import ProductCategoryDetail from "../pages/admin/ProductCategoryDetail";
+import AdminReviews from "../pages/admin/AdminReviews";
 
 export const router = createBrowserRouter([
   {
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
       { path: "categories", element: <AdminProductCategories /> },
       { path: "categories/trash", element: <TrashProductCategories /> },
       { path: "categories/:slug", element: <ProductCategoryDetail /> },
+      { path: "reviews", element: <AdminReviews /> },
 
       // sau này thêm:
       // { path: "categories", element: <AdminCategories /> },
