@@ -23,6 +23,14 @@ export type BulkUpdateResult = {
   upsertedCount: number;
 };
 
+export type MongoUpdateManyResult = {
+  acknowledged: boolean;
+  matchedCount: number;
+  modifiedCount: number;
+  upsertedCount: number;
+  upsertedId: unknown | null;
+};
+
 export interface OrderListItem {
   _id: string;
   orderCode: string;

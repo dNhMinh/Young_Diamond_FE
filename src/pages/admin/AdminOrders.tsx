@@ -1,9 +1,12 @@
+// src/pages/admin/AdminOrdersPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   getAdminOrdersApi,
   updateOrderPaymentStatusApi,
   updateMultiOrderPaymentStatusApi,
+  updateOrderStatusApi,
+  updateMultiOrderStatusApi,
 } from "../../api/admin/order.api";
 import type {
   OrderListItem,
@@ -13,6 +16,24 @@ import type {
 
 type StatusFilter = "all" | OrderStatus;
 
+const ORDER_STATUS_STYLE: Record<OrderStatus, string> = {
+  pending: "bg-yellow-500/20 text-yellow-400",
+  confirmed: "bg-blue-500/20 text-blue-400",
+  shipped: "bg-purple-500/20 text-purple-400",
+  delayed: "bg-orange-500/20 text-orange-400",
+  delivered: "bg-green-500/20 text-green-400",
+  failed: "bg-red-500/20 text-red-400",
+};
+
+const PAYMENT_STATUS_STYLE: Record<PaymentStatus, string> = {
+  pending: "bg-gray-500/20 text-gray-300",
+  paid: "bg-green-500/20 text-green-400",
+  failed: "bg-red-500/20 text-red-400",
+};
+
+// ✅ dropdown (menu options) dùng 1 màu cho dễ nhìn
+const DROPDOWN_OPTION_CLASS = "bg-[#0f0f0f] text-white hover:bg-white/10";
+
 export default function AdminOrders() {
   const [items, setItems] = useState<OrderListItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -21,13 +42,27 @@ export default function AdminOrders() {
   const [searchKey, setSearchKey] = useState("");
 
   // update payment từng dòng
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(
+    null,
+  );
+
+  // update status từng dòng
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
   // ✅ chọn nhiều
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // bulk payment
   const [bulkPaymentStatus, setBulkPaymentStatus] =
     useState<PaymentStatus>("paid");
-  const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [bulkPaymentUpdating, setBulkPaymentUpdating] = useState(false);
+
+  // bulk status
+  const [bulkOrderStatus, setBulkOrderStatus] =
+    useState<OrderStatus>("confirmed");
+  const [bulkStatusUpdating, setBulkStatusUpdating] = useState(false);
+
+  const anyBulkUpdating = bulkPaymentUpdating || bulkStatusUpdating;
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -75,10 +110,8 @@ export default function AdminOrders() {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (allFilteredSelected) {
-        // bỏ chọn tất cả trong filtered
         filtered.forEach((o) => next.delete(o._id));
       } else {
-        // chọn tất cả trong filtered
         filtered.forEach((o) => next.add(o._id));
       }
       return next;
@@ -95,7 +128,7 @@ export default function AdminOrders() {
     const ok = confirm(`Cập nhật paymentStatus: ${current} → ${next} ?`);
     if (!ok) return;
 
-    setUpdatingId(orderId);
+    setUpdatingPaymentId(orderId);
 
     // optimistic
     setItems((prev) =>
@@ -115,11 +148,10 @@ export default function AdminOrders() {
         ),
       );
     } finally {
-      setUpdatingId(null);
+      setUpdatingPaymentId(null);
     }
   };
 
-  // ✅ bulk update
   const handleBulkUpdatePayment = async () => {
     if (selectedInFiltered.length === 0) return alert("Bạn chưa chọn đơn nào.");
 
@@ -128,9 +160,8 @@ export default function AdminOrders() {
     );
     if (!ok) return;
 
-    setBulkUpdating(true);
+    setBulkPaymentUpdating(true);
 
-    // lưu status cũ để revert nếu fail
     const prevMap = new Map<string, PaymentStatus>();
     items.forEach((o) => {
       if (selectedInFiltered.includes(o._id)) {
@@ -169,13 +200,112 @@ export default function AdminOrders() {
         }),
       );
     } finally {
-      setBulkUpdating(false);
+      setBulkPaymentUpdating(false);
+    }
+  };
+
+  // ✅ update status từng dòng (không cho nếu delivered)
+  const handleUpdateStatus = async (orderId: string, next: OrderStatus) => {
+    const current: OrderStatus =
+      items.find((x) => x._id === orderId)?.status ?? "pending";
+    if (next === current) return;
+
+    if (current === "delivered") {
+      return alert(
+        'Đơn hàng đã "delivered" nên không thể cập nhật trạng thái.',
+      );
+    }
+
+    const ok = confirm(`Cập nhật status: ${current} → ${next} ?`);
+    if (!ok) return;
+
+    setUpdatingStatusId(orderId);
+
+    // optimistic
+    setItems((prev) =>
+      prev.map((o) => (o._id === orderId ? { ...o, status: next } : o)),
+    );
+
+    try {
+      const res = await updateOrderStatusApi(orderId, next);
+      alert(res.data.message || "Updated order status");
+      await fetchOrders();
+    } catch (e) {
+      console.error(e);
+      alert("Update order status failed");
+      // revert
+      setItems((prev) =>
+        prev.map((o) => (o._id === orderId ? { ...o, status: current } : o)),
+      );
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
+  // ✅ bulk update status (fail nếu có 1 đơn delivered)
+  const handleBulkUpdateStatus = async () => {
+    if (selectedInFiltered.length === 0) return alert("Bạn chưa chọn đơn nào.");
+
+    const selectedRows = items.filter((o) =>
+      selectedInFiltered.includes(o._id),
+    );
+    const hasDelivered = selectedRows.some((o) => o.status === "delivered");
+    if (hasDelivered) {
+      return alert(
+        'Trong selection có đơn "delivered" nên không thể bulk update (API sẽ fail).',
+      );
+    }
+
+    const ok = confirm(
+      `Cập nhật status = "${bulkOrderStatus}" cho ${selectedInFiltered.length} đơn hàng?`,
+    );
+    if (!ok) return;
+
+    setBulkStatusUpdating(true);
+
+    const prevMap = new Map<string, OrderStatus>();
+    items.forEach((o) => {
+      if (selectedInFiltered.includes(o._id)) prevMap.set(o._id, o.status);
+    });
+
+    // optimistic
+    setItems((prev) =>
+      prev.map((o) =>
+        selectedInFiltered.includes(o._id)
+          ? { ...o, status: bulkOrderStatus }
+          : o,
+      ),
+    );
+
+    try {
+      const res = await updateMultiOrderStatusApi(
+        selectedInFiltered,
+        bulkOrderStatus,
+      );
+      const r = res.data.data;
+      alert(
+        `${res.data.message || "Bulk updated"} (modified: ${r?.modifiedCount ?? 0})`,
+      );
+      clearSelected();
+      await fetchOrders();
+    } catch (e) {
+      console.error(e);
+      alert("Bulk update status failed");
+
+      // revert
+      setItems((prev) =>
+        prev.map((o) => {
+          const old = prevMap.get(o._id);
+          return old ? { ...o, status: old } : o;
+        }),
+      );
+    } finally {
+      setBulkStatusUpdating(false);
     }
   };
 
   return (
     <div>
-      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-xl font-semibold text-white">Orders</h2>
       </div>
@@ -193,18 +323,33 @@ export default function AdminOrders() {
           value={status}
           onChange={(e) => setStatus(e.target.value as StatusFilter)}
           className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm text-white"
+          style={{ colorScheme: "dark" }}
         >
-          <option value="all">All</option>
-          <option value="pending">pending</option>
-          <option value="confirmed">confirmed</option>
-          <option value="shipped">shipped</option>
-          <option value="delayed">delayed</option>
-          <option value="delivered">delivered</option>
-          <option value="failed">failed</option>
+          <option value="all" className={DROPDOWN_OPTION_CLASS}>
+            All
+          </option>
+          <option value="pending" className={DROPDOWN_OPTION_CLASS}>
+            pending
+          </option>
+          <option value="confirmed" className={DROPDOWN_OPTION_CLASS}>
+            confirmed
+          </option>
+          <option value="shipped" className={DROPDOWN_OPTION_CLASS}>
+            shipped
+          </option>
+          <option value="delayed" className={DROPDOWN_OPTION_CLASS}>
+            delayed
+          </option>
+          <option value="delivered" className={DROPDOWN_OPTION_CLASS}>
+            delivered
+          </option>
+          <option value="failed" className={DROPDOWN_OPTION_CLASS}>
+            failed
+          </option>
         </select>
       </div>
 
-      {/* ✅ Bulk actions */}
+      {/* Bulk actions */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
         <div className="text-sm text-gray-300">
           Selected (in current list):{" "}
@@ -215,7 +360,7 @@ export default function AdminOrders() {
           <button
             onClick={toggleSelectAllFiltered}
             className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white hover:bg-white/10 disabled:opacity-60"
-            disabled={filtered.length === 0 || bulkUpdating}
+            disabled={filtered.length === 0 || anyBulkUpdating}
           >
             {allFilteredSelected ? "Unselect All" : "Select All"}
           </button>
@@ -223,30 +368,76 @@ export default function AdminOrders() {
           <button
             onClick={clearSelected}
             className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white hover:bg-white/10 disabled:opacity-60"
-            disabled={selectedCount === 0 || bulkUpdating}
+            disabled={selectedCount === 0 || anyBulkUpdating}
           >
             Clear
           </button>
 
+          {/* Bulk payment */}
           <select
             value={bulkPaymentStatus}
             onChange={(e) =>
               setBulkPaymentStatus(e.target.value as PaymentStatus)
             }
             className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-xs text-white disabled:opacity-60"
-            disabled={bulkUpdating}
+            disabled={anyBulkUpdating}
+            style={{ colorScheme: "dark" }}
           >
-            <option value="pending">pending</option>
-            <option value="paid">paid</option>
-            <option value="failed">failed</option>
+            <option value="pending" className={DROPDOWN_OPTION_CLASS}>
+              pending
+            </option>
+            <option value="paid" className={DROPDOWN_OPTION_CLASS}>
+              paid
+            </option>
+            <option value="failed" className={DROPDOWN_OPTION_CLASS}>
+              failed
+            </option>
           </select>
 
           <button
             onClick={handleBulkUpdatePayment}
             className="rounded-lg bg-white px-3 py-2 text-xs font-medium text-black hover:bg-gray-200 disabled:opacity-60"
-            disabled={selectedCount === 0 || bulkUpdating}
+            disabled={selectedCount === 0 || anyBulkUpdating}
           >
-            {bulkUpdating ? "Applying..." : "Apply to Selected"}
+            {bulkPaymentUpdating ? "Applying..." : "Apply Payment"}
+          </button>
+
+          <div className="mx-2 h-6 w-px bg-white/10" />
+
+          {/* Bulk status */}
+          <select
+            value={bulkOrderStatus}
+            onChange={(e) => setBulkOrderStatus(e.target.value as OrderStatus)}
+            className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-xs text-white disabled:opacity-60"
+            disabled={anyBulkUpdating}
+            style={{ colorScheme: "dark" }}
+          >
+            <option value="pending" className={DROPDOWN_OPTION_CLASS}>
+              pending
+            </option>
+            <option value="confirmed" className={DROPDOWN_OPTION_CLASS}>
+              confirmed
+            </option>
+            <option value="shipped" className={DROPDOWN_OPTION_CLASS}>
+              shipped
+            </option>
+            <option value="delayed" className={DROPDOWN_OPTION_CLASS}>
+              delayed
+            </option>
+            <option value="delivered" className={DROPDOWN_OPTION_CLASS}>
+              delivered
+            </option>
+            <option value="failed" className={DROPDOWN_OPTION_CLASS}>
+              failed
+            </option>
+          </select>
+
+          <button
+            onClick={handleBulkUpdateStatus}
+            className="rounded-lg bg-white px-3 py-2 text-xs font-medium text-black hover:bg-gray-200 disabled:opacity-60"
+            disabled={selectedCount === 0 || anyBulkUpdating}
+          >
+            {bulkStatusUpdating ? "Applying..." : "Apply Status"}
           </button>
         </div>
       </div>
@@ -261,7 +452,7 @@ export default function AdminOrders() {
                   type="checkbox"
                   checked={allFilteredSelected}
                   onChange={toggleSelectAllFiltered}
-                  disabled={filtered.length === 0 || bulkUpdating}
+                  disabled={filtered.length === 0 || anyBulkUpdating}
                 />
               </th>
               <th className="px-4 py-3 text-left">Order Code</th>
@@ -289,7 +480,8 @@ export default function AdminOrders() {
             ) : (
               filtered.map((o) => {
                 const pay: PaymentStatus = o.paymentStatus ?? "pending";
-                const rowUpdating = updatingId === o._id;
+                const rowPayUpdating = updatingPaymentId === o._id;
+                const rowStatusUpdating = updatingStatusId === o._id;
 
                 return (
                   <tr
@@ -301,7 +493,7 @@ export default function AdminOrders() {
                         type="checkbox"
                         checked={selectedIds.has(o._id)}
                         onChange={() => toggleOne(o._id)}
-                        disabled={bulkUpdating}
+                        disabled={anyBulkUpdating}
                       />
                     </td>
 
@@ -323,32 +515,112 @@ export default function AdminOrders() {
                       {o.totalAmount?.toLocaleString()}₫
                     </td>
 
+                    {/* ✅ Status: select dạng chip, dropdown 1 màu */}
                     <td className="px-4 py-3">
-                      <OrderStatusBadge status={o.status} />
+                      <div className="flex flex-col items-start gap-1">
+                        <select
+                          value={o.status}
+                          disabled={
+                            anyBulkUpdating ||
+                            rowStatusUpdating ||
+                            o.status === "delivered"
+                          }
+                          onChange={(e) =>
+                            handleUpdateStatus(
+                              o._id,
+                              e.target.value as OrderStatus,
+                            )
+                          }
+                          className={`min-w-[110px] rounded-full border border-white/10 px-3 py-1 pr-7 text-xs outline-none ${ORDER_STATUS_STYLE[o.status]} disabled:opacity-60`}
+                          title={
+                            o.status === "delivered"
+                              ? "Delivered không thể cập nhật"
+                              : ""
+                          }
+                          style={{ colorScheme: "dark" }}
+                        >
+                          <option
+                            value="pending"
+                            className={DROPDOWN_OPTION_CLASS}
+                          >
+                            pending
+                          </option>
+                          <option
+                            value="confirmed"
+                            className={DROPDOWN_OPTION_CLASS}
+                          >
+                            confirmed
+                          </option>
+                          <option
+                            value="shipped"
+                            className={DROPDOWN_OPTION_CLASS}
+                          >
+                            shipped
+                          </option>
+                          <option
+                            value="delayed"
+                            className={DROPDOWN_OPTION_CLASS}
+                          >
+                            delayed
+                          </option>
+                          <option
+                            value="delivered"
+                            className={DROPDOWN_OPTION_CLASS}
+                          >
+                            delivered
+                          </option>
+                          <option
+                            value="failed"
+                            className={DROPDOWN_OPTION_CLASS}
+                          >
+                            failed
+                          </option>
+                        </select>
+
+                        {rowStatusUpdating ? (
+                          <span className="text-xs text-white/50">
+                            Saving...
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
 
+                    {/* ✅ Payment: select dạng chip, dropdown 1 màu */}
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <PaymentStatusBadge status={pay} />
-
-                        {/* update từng dòng */}
+                      <div className="flex flex-col items-start gap-1">
                         <select
                           value={pay}
-                          disabled={rowUpdating || bulkUpdating}
+                          disabled={anyBulkUpdating || rowPayUpdating}
                           onChange={(e) =>
                             handleUpdatePayment(
                               o._id,
                               e.target.value as PaymentStatus,
                             )
                           }
-                          className="rounded-lg border border-white/10 bg-[#0f0f0f] px-2 py-1 text-xs text-white disabled:opacity-60"
+                          className={`min-w-[110px] rounded-full border border-white/10 px-3 py-1 pr-7 text-xs outline-none ${PAYMENT_STATUS_STYLE[pay]} disabled:opacity-60`}
+                          style={{ colorScheme: "dark" }}
                         >
-                          <option value="pending">pending</option>
-                          <option value="paid">paid</option>
-                          <option value="failed">failed</option>
+                          <option
+                            value="pending"
+                            className={DROPDOWN_OPTION_CLASS}
+                          >
+                            pending
+                          </option>
+                          <option
+                            value="paid"
+                            className={DROPDOWN_OPTION_CLASS}
+                          >
+                            paid
+                          </option>
+                          <option
+                            value="failed"
+                            className={DROPDOWN_OPTION_CLASS}
+                          >
+                            failed
+                          </option>
                         </select>
 
-                        {rowUpdating ? (
+                        {rowPayUpdating ? (
                           <span className="text-xs text-white/50">
                             Saving...
                           </span>
@@ -378,34 +650,5 @@ export default function AdminOrders() {
         </table>
       </div>
     </div>
-  );
-}
-
-function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  const map: Record<OrderStatus, string> = {
-    pending: "bg-yellow-500/20 text-yellow-400",
-    confirmed: "bg-blue-500/20 text-blue-400",
-    shipped: "bg-purple-500/20 text-purple-400",
-    delayed: "bg-orange-500/20 text-orange-400",
-    delivered: "bg-green-500/20 text-green-400",
-    failed: "bg-red-500/20 text-red-400",
-  };
-  return (
-    <span className={`rounded-full px-3 py-1 text-xs ${map[status]}`}>
-      {status}
-    </span>
-  );
-}
-
-function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
-  const map: Record<PaymentStatus, string> = {
-    pending: "bg-gray-500/20 text-gray-300",
-    paid: "bg-green-500/20 text-green-400",
-    failed: "bg-red-500/20 text-red-400",
-  };
-  return (
-    <span className={`rounded-full px-3 py-1 text-xs ${map[status]}`}>
-      {status}
-    </span>
   );
 }

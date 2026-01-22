@@ -3,6 +3,7 @@ import baseApi from "../../api/baseApi";
 import type {
   ApiResponse,
   BulkUpdateResult,
+  MongoUpdateManyResult,
   OrderDetail,
   OrderListItem,
   OrderStatus,
@@ -43,5 +44,22 @@ export const updateMultiOrderPaymentStatusApi = (
   return baseApi.patch<ApiResponse<BulkUpdateResult>>(
     "/admin/orders/update-multi-payment-status",
     { orderIds, paymentStatus },
+  );
+};
+
+export const updateOrderStatusApi = (orderId: string, status: OrderStatus) => {
+  return baseApi.patch<ApiResponse<OrderDetail>>(
+    `/admin/orders/update-status-order/${orderId}`,
+    { status },
+  );
+};
+
+export const updateMultiOrderStatusApi = (
+  orderIds: string[],
+  status: OrderStatus,
+) => {
+  return baseApi.patch<ApiResponse<MongoUpdateManyResult>>(
+    `/admin/orders/update-multi-status-order`,
+    { orderIds, status },
   );
 };
