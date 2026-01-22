@@ -13,6 +13,7 @@ import ProductCategoryDetail from "../pages/admin/ProductCategoryDetail";
 import AdminReviews from "../pages/admin/AdminReviews";
 import AdminOrders from "../pages/admin/AdminOrders";
 import OrderDetailPage from "../pages/admin/OrderDetailPage";
+import AdminSettingsPage from "../pages/admin/AdminSettingsPage";
 
 export const router = createBrowserRouter([
   {
@@ -58,6 +59,7 @@ export const router = createBrowserRouter([
       { path: "reviews", element: <AdminReviews /> },
       { path: "orders", element: <AdminOrders /> },
       { path: "orders/:orderId", element: <OrderDetailPage /> },
+      { path: "settings", element: <AdminSettingsPage /> },
 
       // sau này thêm:
       // { path: "categories", element: <AdminCategories /> },
