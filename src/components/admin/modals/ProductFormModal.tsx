@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminModal from "./AdminModal";
-import { uploadToCloudinary } from "../../utils/cloudinary";
+import { uploadToCloudinary } from "../../../utils/cloudinary";
 import {
   getAdminProductCategoriesApi,
   type ProductCategoryListItem,
-} from "../../api/admin/productCategory.api";
+} from "../../../api/admin/productCategory.api";
 
 export type ProductStatus = "active" | "inactive" | "out_of_stock";
 

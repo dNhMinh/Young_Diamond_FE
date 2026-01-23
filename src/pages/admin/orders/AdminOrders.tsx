@@ -7,12 +7,12 @@ import {
   updateMultiOrderPaymentStatusApi,
   updateOrderStatusApi,
   updateMultiOrderStatusApi,
-} from "../../api/admin/order.api";
+} from "../../../api/admin/order.api";
 import type {
   OrderListItem,
   OrderStatus,
   PaymentStatus,
-} from "../../types/order";
+} from "../../../types/order";
 
 type StatusFilter = "all" | OrderStatus;
 

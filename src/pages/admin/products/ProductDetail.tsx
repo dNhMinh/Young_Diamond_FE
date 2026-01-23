@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getProductDetailApi } from "../../api/admin/product.api";
-import type { ProductDetail } from "../../types/product";
+import { getProductDetailApi } from "../../../api/admin/product.api";
+import type { ProductDetail } from "../../../types/product";
 
 export default function ProductDetailPage() {
   const { slug } = useParams();

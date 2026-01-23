@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getOrderDetailApi } from "../../api/admin/order.api";
-import { getAdminProductsApi } from "../../api/admin/product.api";
-import type { OrderDetail } from "../../types/order";
+import { getOrderDetailApi } from "../../../api/admin/order.api";
+import { getAdminProductsApi } from "../../../api/admin/product.api";
+import type { OrderDetail } from "../../../types/order";
 
 type FetchStatus = "loading" | "success" | "error";
 

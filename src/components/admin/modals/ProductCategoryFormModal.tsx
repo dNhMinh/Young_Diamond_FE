@@ -1,7 +1,7 @@
 // src/components/admin/ProductCategoryFormModal.tsx
 import { useMemo, useState } from "react";
 import AdminModal from "./AdminModal";
-import type { ProductCategoryStatus } from "../../api/admin/productCategory.api";
+import type { ProductCategoryStatus } from "../../../api/admin/productCategory.api";
 
 export type ProductCategoryFormValues = {
   title: string;

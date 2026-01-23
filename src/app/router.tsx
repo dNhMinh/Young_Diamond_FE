@@ -1,19 +1,19 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import AdminLogin from "../pages/admin/Login";
-import Dashboard from "../pages/admin/Dashboard";
-import AdminProducts from "../pages/admin/Products";
+import AdminLogin from "../pages/admin/login/Login";
+import Dashboard from "../pages/admin/dashboard/Dashboard";
+import AdminProducts from "../pages/admin/products/Products";
 import RequireAdmin from "../routes/RequireAdmin";
 import RequireGuest from "../routes/RequireGuest";
 import AdminLayout from "../layouts/AdminLayout";
-import ProductDetailPage from "../pages/admin/ProductDetail";
-import TrashProducts from "../pages/admin/TrashProducts";
-import AdminProductCategories from "../pages/admin/ProductCategories";
-import TrashProductCategories from "../pages/admin/TrashProductCategories";
-import ProductCategoryDetail from "../pages/admin/ProductCategoryDetail";
-import AdminReviews from "../pages/admin/AdminReviews";
-import AdminOrders from "../pages/admin/AdminOrders";
-import OrderDetailPage from "../pages/admin/OrderDetailPage";
-import AdminSettingsPage from "../pages/admin/AdminSettingsPage";
+import ProductDetailPage from "../pages/admin/products/ProductDetail";
+import TrashProducts from "../pages/admin/products/TrashProducts";
+import AdminProductCategories from "../pages/admin/productCategories/ProductCategories";
+import TrashProductCategories from "../pages/admin/productCategories/TrashProductCategories";
+import ProductCategoryDetail from "../pages/admin/productCategories/ProductCategoryDetail";
+import AdminReviews from "../pages/admin/reviews/AdminReviews";
+import AdminOrders from "../pages/admin/orders/AdminOrders";
+import OrderDetailPage from "../pages/admin/orders/OrderDetailPage";
+import AdminSettingsPage from "../pages/admin/settings/AdminSettingsPage";
 
 export const router = createBrowserRouter([
   {
@@ -60,10 +60,6 @@ export const router = createBrowserRouter([
       { path: "orders", element: <AdminOrders /> },
       { path: "orders/:orderId", element: <OrderDetailPage /> },
       { path: "settings", element: <AdminSettingsPage /> },
-
-      // sau này thêm:
-      // { path: "categories", element: <AdminCategories /> },
-      // { path: "orders", element: <AdminOrders /> },
     ],
   },
 ]);

@@ -6,7 +6,7 @@ import {
   hardDeleteProductCategoryApi,
   type ProductCategoryListItem,
   type ProductCategoryStatus,
-} from "../../api/admin/productCategory.api";
+} from "../../../api/admin/productCategory.api";
 import { Link } from "react-router-dom";
 
 type StatusFilter = "all" | ProductCategoryStatus;

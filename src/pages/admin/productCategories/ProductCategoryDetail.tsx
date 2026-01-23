@@ -4,7 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import {
   getProductCategoryDetailApi,
   type ProductCategoryStatus,
-} from "../../api/admin/productCategory.api";
+} from "../../../api/admin/productCategory.api";
 
 type Detail = {
   _id: string;

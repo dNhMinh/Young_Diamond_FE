@@ -4,9 +4,9 @@ import {
   deleteReviewApi,
   editReviewApi,
   getAdminReviewsApi,
-} from "../../api/admin/review.api";
-import type { ReviewItem, ReviewFormValues } from "../../types/review";
-import ReviewFormModal from "../../components/admin/ReviewFormModal";
+} from "../../../api/admin/review.api";
+import type { ReviewItem, ReviewFormValues } from "../../../types/review";
+import ReviewFormModal from "../../../components/admin/modals/ReviewFormModal";
 
 export default function AdminReviews() {
   const [items, setItems] = useState<ReviewItem[]>([]);

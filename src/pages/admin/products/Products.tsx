@@ -6,13 +6,13 @@ import {
   softDeleteProductApi,
   updateProductApi,
   type UpdateProductPayload,
-} from "../../api/admin/product.api";
+} from "../../../api/admin/product.api";
 import { Link } from "react-router-dom";
 import ProductFormModal, {
   type ProductFormValues,
   type SizeItem,
-} from "../../components/admin/ProductFormModal";
-import type { ProductListItem } from "../../types/product";
+} from "../../../components/admin/modals/ProductFormModal";
+import type { ProductListItem } from "../../../types/product";
 
 type ProductStatusFilter = "all" | "active" | "inactive" | "out_of_stock";
 

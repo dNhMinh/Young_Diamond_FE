@@ -3,8 +3,8 @@ import {
   getAdminProductsApi,
   restoreProductApi,
   hardDeleteProductApi,
-} from "../../api/admin/product.api";
-import type { ProductListItem } from "../../types/product";
+} from "../../../api/admin/product.api";
+import type { ProductListItem } from "../../../types/product";
 import { Link } from "react-router-dom";
 
 export default function TrashProducts() {

@@ -1,4 +1,4 @@
-// src/pages/admin/ProductCategories.tsx
+//src/pages/admin/productCategories/ProductCategories.tsx
 import { useEffect, useMemo, useState } from "react";
 import {
   createProductCategoryApi,
@@ -9,11 +9,11 @@ import {
   type ProductCategoryListItem,
   type ProductCategoryStatus,
   type UpdateProductCategoryPayload,
-} from "../../api/admin/productCategory.api";
+} from "../../../api/admin/productCategory.api";
 import { Link } from "react-router-dom";
 import ProductCategoryFormModal, {
   type ProductCategoryFormValues,
-} from "../../components/admin/ProductCategoryFormModal";
+} from "../../../components/admin/modals/ProductCategoryFormModal";
 
 type StatusFilter = "all" | ProductCategoryStatus;
 
@@ -321,14 +321,17 @@ export default function AdminProductCategories() {
         </table>
       </div>
 
-      <ProductCategoryFormModal
-        open={modalOpen}
-        mode={modalMode}
-        initialValues={initialValues}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleSubmit}
-        submitting={submitting}
-      />
+      {modalOpen ? (
+        <ProductCategoryFormModal
+          key={`${modalMode}-${editingId ?? "new"}`}
+          open={modalOpen}
+          mode={modalMode}
+          initialValues={initialValues}
+          onClose={() => setModalOpen(false)}
+          onSubmit={handleSubmit}
+          submitting={submitting}
+        />
+      ) : null}
     </div>
   );
 }

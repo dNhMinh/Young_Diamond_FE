@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import AdminModal from "./AdminModal";
-import type { ReviewFormValues, ReviewItem } from "../../types/review";
+import type { ReviewFormValues, ReviewItem } from "../../../types/review";
 
 type Props = {
   open: boolean;

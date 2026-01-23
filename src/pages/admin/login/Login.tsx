@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { adminLoginApi } from "../../api/admin/auth.api";
-import { useAppDispatch } from "../../app/hooks";
-import { loginSuccess } from "../../features/admin/auth/auth.slice";
+import { adminLoginApi } from "../../../api/admin/auth.api";
+import { useAppDispatch } from "../../../app/hooks";
+import { loginSuccess } from "../../../features/admin/auth/auth.slice";
 import { useNavigate } from "react-router-dom";
 
 export default function AdminLogin() {
@@ -20,6 +20,7 @@ export default function AdminLogin() {
         }),
       );
       navigate("/admin/dashboard");
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       alert("Đăng nhập thất bại");
     }
