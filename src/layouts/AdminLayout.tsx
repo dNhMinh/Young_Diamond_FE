@@ -28,6 +28,7 @@ export default function AdminLayout() {
           <MenuItem to="/admin/categories" label="Categories" />
           <MenuItem to="/admin/orders" label="Orders" />
           <MenuItem to="/admin/reviews" label="Reviews" />
+          <MenuItem to="/admin/banners" label="Banners" />
           <MenuItem to="/admin/settings" label="Settings" />
         </nav>
       </aside>

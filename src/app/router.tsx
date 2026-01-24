@@ -14,6 +14,7 @@ import AdminReviews from "../pages/admin/reviews/AdminReviews";
 import AdminOrders from "../pages/admin/orders/AdminOrders";
 import OrderDetailPage from "../pages/admin/orders/OrderDetailPage";
 import AdminSettingsPage from "../pages/admin/settings/AdminSettingsPage";
+import AdminBannersPage from "../pages/admin/banners/AdminBannersPage";
 
 export const router = createBrowserRouter([
   {
@@ -60,6 +61,7 @@ export const router = createBrowserRouter([
       { path: "orders", element: <AdminOrders /> },
       { path: "orders/:orderId", element: <OrderDetailPage /> },
       { path: "settings", element: <AdminSettingsPage /> },
+      { path: "banners", element: <AdminBannersPage /> },
     ],
   },
 ]);
