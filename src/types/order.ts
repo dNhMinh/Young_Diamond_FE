@@ -61,6 +61,7 @@ export interface PaymentInfo {
   method?: string;
   paymentDate?: string;
   paymentStatus?: PaymentStatus;
+  imageCheckPayment?: string;
 }
 
 export interface OrderDetail {
@@ -72,6 +73,7 @@ export interface OrderDetail {
   shippingCarrier?: string;
   status: OrderStatus;
   payment?: PaymentInfo;
+  failReason?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }

@@ -12,12 +12,17 @@ import type {
 
 export const getAdminOrdersApi = (params?: {
   status?: "all" | OrderStatus;
+  paymentStatus?: "all" | PaymentStatus;
 }) => {
   const status =
     params?.status && params.status !== "all" ? params.status : undefined;
+  const paymentStatus =
+    params?.paymentStatus && params.paymentStatus !== "all"
+      ? params.paymentStatus
+      : undefined;
 
   return baseApi.get<ApiResponse<OrderListItem[]>>("/admin/orders", {
-    params: { status },
+    params: { status, paymentStatus },
   });
 };
 
@@ -47,19 +52,47 @@ export const updateMultiOrderPaymentStatusApi = (
   );
 };
 
-export const updateOrderStatusApi = (orderId: string, status: OrderStatus) => {
+// export const updateOrderStatusApi = (orderId: string, status: OrderStatus) => {
+//   return baseApi.patch<ApiResponse<OrderDetail>>(
+//     `/admin/orders/update-status-order/${orderId}`,
+//     { status },
+//   );
+// };
+
+// export const updateMultiOrderStatusApi = (
+//   orderIds: string[],
+//   status: OrderStatus,
+// ) => {
+//   return baseApi.patch<ApiResponse<MongoUpdateManyResult>>(
+//     `/admin/orders/update-multi-status-order`,
+//     { orderIds, status },
+//   );
+// };
+
+export const updateOrderStatusApi = (
+  orderId: string,
+  status: OrderStatus,
+  failReason?: string,
+) => {
+  const payload: Record<string, unknown> = { status };
+  if (typeof failReason === "string") payload.failReason = failReason;
+
   return baseApi.patch<ApiResponse<OrderDetail>>(
     `/admin/orders/update-status-order/${orderId}`,
-    { status },
+    payload,
   );
 };
 
 export const updateMultiOrderStatusApi = (
   orderIds: string[],
   status: OrderStatus,
+  failReason?: string,
 ) => {
+  const payload: Record<string, unknown> = { orderIds, status };
+  if (typeof failReason === "string") payload.failReason = failReason;
+
   return baseApi.patch<ApiResponse<MongoUpdateManyResult>>(
     `/admin/orders/update-multi-status-order`,
-    { orderIds, status },
+    payload,
   );
 };

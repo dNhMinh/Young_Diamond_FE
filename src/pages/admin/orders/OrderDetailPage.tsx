@@ -1,3 +1,4 @@
+// src/pages/admin/orders/OrderDetailPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getOrderDetailApi } from "../../../api/admin/order.api";
@@ -17,7 +18,7 @@ type ProductIndex = Record<
 export default function OrderDetailPage() {
   const { orderId } = useParams();
 
-  // ✅ remount theo orderId để khỏi cần setState("loading") trong effect
+  // ✅ remount theo orderId => state reset về initial (loading) => KHÔNG cần setStatus("loading") trong effect
   return <OrderDetailPageInner key={orderId} orderId={orderId} />;
 }
 
@@ -25,10 +26,9 @@ function OrderDetailPageInner({ orderId }: { orderId?: string }) {
   const [data, setData] = useState<OrderDetail | null>(null);
   const [status, setStatus] = useState<FetchStatus>("loading");
 
-  // productId -> { title, slug }
   const [productIndex, setProductIndex] = useState<ProductIndex>({});
 
-  // 1) fetch order detail
+  // 1) fetch order detail (GIỮ NHƯ CŨ)
   useEffect(() => {
     if (!orderId) return;
 
@@ -52,7 +52,7 @@ function OrderDetailPageInner({ orderId }: { orderId?: string }) {
     };
   }, [orderId]);
 
-  // 2) fetch product list -> build map id -> title (chạy sau khi có order)
+  // 2) fetch products index (GIỮ NHƯ CŨ)
   useEffect(() => {
     if (status !== "success") return;
     if (!data?.products?.length) return;
@@ -71,13 +71,12 @@ function OrderDetailPageInner({ orderId }: { orderId?: string }) {
       })
       .catch((e) => {
         console.error("Fetch products for index failed", e);
-        // không set state gì ở đây cũng được, cứ fallback hiển thị id
       });
 
     return () => {
       cancelled = true;
     };
-  }, [status, data?._id]); // đổi order -> rebuild index
+  }, [status, data?._id]);
 
   const totalProducts = useMemo(() => {
     if (!data?.products?.length) return 0;
@@ -90,6 +89,9 @@ function OrderDetailPageInner({ orderId }: { orderId?: string }) {
   if (status === "error" || !data)
     return <div className="text-gray-300">Order not found</div>;
 
+  const proof = data.payment?.imageCheckPayment; // ✅ new
+  const showFail = data.status === "failed"; // ✅ new
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -97,6 +99,14 @@ function OrderDetailPageInner({ orderId }: { orderId?: string }) {
         <div>
           <h2 className="text-xl font-semibold text-white">Order Detail</h2>
           <p className="mt-1 text-sm text-gray-400">{data.orderCode}</p>
+
+          {/* ✅ failReason */}
+          {showFail ? (
+            <p className="mt-2 text-sm text-red-300">
+              <span className="text-red-200/80">Fail reason:</span>{" "}
+              {data.failReason ?? "-"}
+            </p>
+          ) : null}
         </div>
 
         <Link
@@ -116,19 +126,19 @@ function OrderDetailPageInner({ orderId }: { orderId?: string }) {
           <div className="space-y-1 text-sm text-gray-300">
             <div>
               <span className="text-gray-400">Name:</span>{" "}
-              {data.shippingInfo?.fullName}
+              {data.shippingInfo?.fullName ?? "-"}
             </div>
             <div>
               <span className="text-gray-400">Phone:</span>{" "}
-              {data.shippingInfo?.phoneNumber}
+              {data.shippingInfo?.phoneNumber ?? "-"}
             </div>
             <div>
               <span className="text-gray-400">Email:</span>{" "}
-              {data.shippingInfo?.email}
+              {data.shippingInfo?.email ?? "-"}
             </div>
             <div>
               <span className="text-gray-400">Address:</span>{" "}
-              {data.shippingInfo?.address}
+              {data.shippingInfo?.address ?? "-"}
             </div>
             <div>
               <span className="text-gray-400">Note:</span>{" "}
@@ -145,27 +155,70 @@ function OrderDetailPageInner({ orderId }: { orderId?: string }) {
             <div>
               <span className="text-gray-400">Status:</span> {data.status}
             </div>
+
+            {/* Nếu BE có field này thì vẫn hiện, không có thì "-" */}
             <div>
               <span className="text-gray-400">Shipping carrier:</span>{" "}
               {data.shippingCarrier ?? "-"}
             </div>
+
             <div>
               <span className="text-gray-400">Payment method:</span>{" "}
               {data.payment?.method ?? "-"}
             </div>
+
             <div>
               <span className="text-gray-400">Payment status:</span>{" "}
               {data.payment?.paymentStatus ?? "-"}
             </div>
+
             <div>
               <span className="text-gray-400">Payment date:</span>{" "}
               {data.payment?.paymentDate
                 ? new Date(data.payment.paymentDate).toLocaleString()
                 : "-"}
             </div>
+
+            {/* ✅ payment proof */}
+            <div className="pt-2">
+              <span className="text-gray-400">Payment proof:</span>{" "}
+              {proof ? (
+                <a
+                  href={proof}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-400 hover:underline"
+                >
+                  Open image
+                </a>
+              ) : (
+                "-"
+              )}
+            </div>
+
+            {proof ? (
+              <div className="mt-2 overflow-hidden rounded-xl border border-white/10">
+                <img
+                  src={proof}
+                  alt="Payment proof"
+                  className="max-h-[280px] w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+            ) : null}
+
+            {/* ✅ failReason trong summary */}
+            {showFail ? (
+              <div className="pt-2">
+                <span className="text-gray-400">Fail reason:</span>{" "}
+                {data.failReason ?? "-"}
+              </div>
+            ) : null}
+
             <div>
               <span className="text-gray-400">Items:</span> {totalProducts}
             </div>
+
             <div className="pt-2 text-white">
               <span className="text-gray-400">Total:</span>{" "}
               {data.totalAmount.toLocaleString()}₫

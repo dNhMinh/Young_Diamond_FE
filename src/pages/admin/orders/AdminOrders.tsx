@@ -1,4 +1,4 @@
-// src/pages/admin/AdminOrdersPage.tsx
+// src/pages/admin/orders/AdminOrdersPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -15,6 +15,7 @@ import type {
 } from "../../../types/order";
 
 type StatusFilter = "all" | OrderStatus;
+type PaymentStatusFilter = "all" | PaymentStatus;
 
 const ORDER_STATUS_STYLE: Record<OrderStatus, string> = {
   pending: "bg-yellow-500/20 text-yellow-400",
@@ -31,7 +32,6 @@ const PAYMENT_STATUS_STYLE: Record<PaymentStatus, string> = {
   failed: "bg-red-500/20 text-red-400",
 };
 
-// ✅ dropdown (menu options) dùng 1 màu cho dễ nhìn
 const DROPDOWN_OPTION_CLASS = "bg-[#0f0f0f] text-white hover:bg-white/10";
 
 export default function AdminOrders() {
@@ -39,6 +39,9 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(false);
 
   const [status, setStatus] = useState<StatusFilter>("all");
+  const [paymentStatus, setPaymentStatus] =
+    useState<PaymentStatusFilter>("all");
+
   const [searchKey, setSearchKey] = useState("");
 
   // update payment từng dòng
@@ -67,7 +70,7 @@ export default function AdminOrders() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await getAdminOrdersApi({ status });
+      const res = await getAdminOrdersApi({ status, paymentStatus });
       setItems(res.data.data ?? []);
     } catch (e) {
       console.error(e);
@@ -80,7 +83,7 @@ export default function AdminOrders() {
   useEffect(() => {
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
+  }, [status, paymentStatus]);
 
   const filtered = useMemo(() => {
     const q = searchKey.trim().toLowerCase();
@@ -204,10 +207,46 @@ export default function AdminOrders() {
     }
   };
 
-  // ✅ update status từng dòng (không cho nếu delivered)
+  //  update status từng dòng (không cho nếu delivered)
+  // const handleUpdateStatus = async (orderId: string, next: OrderStatus) => {
+  //   const current: OrderStatus =
+  //     items.find((x) => x._id === orderId)?.status ?? "pending";
+  //   if (next === current) return;
+
+  //   if (current === "delivered") {
+  //     return alert(
+  //       'Đơn hàng đã "delivered" nên không thể cập nhật trạng thái.',
+  //     );
+  //   }
+
+  //   const ok = confirm(`Cập nhật status: ${current} → ${next} ?`);
+  //   if (!ok) return;
+
+  //   setUpdatingStatusId(orderId);
+
+  //   // optimistic
+  //   setItems((prev) =>
+  //     prev.map((o) => (o._id === orderId ? { ...o, status: next } : o)),
+  //   );
+
+  //   try {
+  //     const res = await updateOrderStatusApi(orderId, next);
+  //     alert(res.data.message || "Updated order status");
+  //     await fetchOrders();
+  //   } catch (e) {
+  //     console.error(e);
+  //     alert("Update order status failed");
+  //     // revert
+  //     setItems((prev) =>
+  //       prev.map((o) => (o._id === orderId ? { ...o, status: current } : o)),
+  //     );
+  //   } finally {
+  //     setUpdatingStatusId(null);
+  //   }
+  // };
   const handleUpdateStatus = async (orderId: string, next: OrderStatus) => {
-    const current: OrderStatus =
-      items.find((x) => x._id === orderId)?.status ?? "pending";
+    const currentRow = items.find((x) => x._id === orderId);
+    const current: OrderStatus = currentRow?.status ?? "pending";
     if (next === current) return;
 
     if (current === "delivered") {
@@ -219,30 +258,125 @@ export default function AdminOrders() {
     const ok = confirm(`Cập nhật status: ${current} → ${next} ?`);
     if (!ok) return;
 
+    // ✅ nếu chuyển sang failed -> bắt nhập lý do
+    let reason: string | undefined = undefined;
+    if (next === "failed") {
+      const input = prompt(
+        "Nhập lý do hủy/thất bại (failReason):",
+        currentRow?.failReason ?? "",
+      );
+
+      if (input === null) return; // user cancel
+      const v = input.trim();
+      if (!v) {
+        alert("Vui lòng nhập lý do (failReason).");
+        return;
+      }
+      reason = v;
+    }
+
     setUpdatingStatusId(orderId);
 
-    // optimistic
+    // optimistic (đồng bộ rule BE: non-failed -> failReason null)
     setItems((prev) =>
-      prev.map((o) => (o._id === orderId ? { ...o, status: next } : o)),
+      prev.map((o) =>
+        o._id === orderId
+          ? {
+              ...o,
+              status: next,
+              failReason: next === "failed" ? reason : null,
+            }
+          : o,
+      ),
     );
 
     try {
-      const res = await updateOrderStatusApi(orderId, next);
+      const res = await updateOrderStatusApi(orderId, next, reason);
       alert(res.data.message || "Updated order status");
       await fetchOrders();
     } catch (e) {
       console.error(e);
       alert("Update order status failed");
+
       // revert
       setItems((prev) =>
-        prev.map((o) => (o._id === orderId ? { ...o, status: current } : o)),
+        prev.map((o) =>
+          o._id === orderId
+            ? {
+                ...o,
+                status: current,
+                failReason: currentRow?.failReason ?? o.failReason ?? null,
+              }
+            : o,
+        ),
       );
     } finally {
       setUpdatingStatusId(null);
     }
   };
 
-  // ✅ bulk update status (fail nếu có 1 đơn delivered)
+  //  bulk update status (fail nếu có 1 đơn delivered)
+  // const handleBulkUpdateStatus = async () => {
+  //   if (selectedInFiltered.length === 0) return alert("Bạn chưa chọn đơn nào.");
+
+  //   const selectedRows = items.filter((o) =>
+  //     selectedInFiltered.includes(o._id),
+  //   );
+  //   const hasDelivered = selectedRows.some((o) => o.status === "delivered");
+  //   if (hasDelivered) {
+  //     return alert(
+  //       'Trong selection có đơn "delivered" nên không thể bulk update (API sẽ fail).',
+  //     );
+  //   }
+
+  //   const ok = confirm(
+  //     `Cập nhật status = "${bulkOrderStatus}" cho ${selectedInFiltered.length} đơn hàng?`,
+  //   );
+  //   if (!ok) return;
+
+  //   setBulkStatusUpdating(true);
+
+  //   const prevMap = new Map<string, OrderStatus>();
+  //   items.forEach((o) => {
+  //     if (selectedInFiltered.includes(o._id)) prevMap.set(o._id, o.status);
+  //   });
+
+  //   // optimistic
+  //   setItems((prev) =>
+  //     prev.map((o) =>
+  //       selectedInFiltered.includes(o._id)
+  //         ? { ...o, status: bulkOrderStatus }
+  //         : o,
+  //     ),
+  //   );
+
+  //   try {
+  //     const res = await updateMultiOrderStatusApi(
+  //       selectedInFiltered,
+  //       bulkOrderStatus,
+  //     );
+  //     const r = res.data.data;
+  //     alert(
+  //       `${res.data.message || "Bulk updated"} (modified: ${r?.modifiedCount ?? 0})`,
+  //     );
+  //     clearSelected();
+  //     await fetchOrders();
+  //   } catch (e) {
+  //     console.error(e);
+  //     alert("Bulk update status failed");
+
+  //     // revert
+  //     setItems((prev) =>
+  //       prev.map((o) => {
+  //         const old = prevMap.get(o._id);
+  //         return old ? { ...o, status: old } : o;
+  //       }),
+  //     );
+  //   } finally {
+  //     setBulkStatusUpdating(false);
+  //   }
+  // };
+
   const handleBulkUpdateStatus = async () => {
     if (selectedInFiltered.length === 0) return alert("Bạn chưa chọn đơn nào.");
 
@@ -261,18 +395,49 @@ export default function AdminOrders() {
     );
     if (!ok) return;
 
+    // ✅ nếu bulk sang failed -> bắt nhập lý do
+    let reason: string | undefined = undefined;
+    if (bulkOrderStatus === "failed") {
+      const input = prompt(
+        "Nhập lý do hủy/thất bại (failReason) cho các đơn:",
+        "",
+      );
+      if (input === null) return;
+      const v = input.trim();
+      if (!v) {
+        alert("Vui lòng nhập lý do (failReason).");
+        return;
+      }
+      reason = v;
+    }
+
     setBulkStatusUpdating(true);
 
-    const prevMap = new Map<string, OrderStatus>();
+    const prevMap = new Map<
+      string,
+      { status: OrderStatus; failReason?: string | null }
+    >();
     items.forEach((o) => {
-      if (selectedInFiltered.includes(o._id)) prevMap.set(o._id, o.status);
+      if (selectedInFiltered.includes(o._id)) {
+        prevMap.set(o._id, {
+          status: o.status,
+          failReason: o.failReason ?? null,
+        });
+      }
     });
 
     // optimistic
     setItems((prev) =>
       prev.map((o) =>
         selectedInFiltered.includes(o._id)
-          ? { ...o, status: bulkOrderStatus }
+          ? {
+              ...o,
+              status: bulkOrderStatus,
+              // đồng bộ UI: non-failed thì không còn reason
+              // failReason: bulkOrderStatus === "failed" ? reason : null,
+              failReason:
+                bulkOrderStatus === "failed" ? reason : (o.failReason ?? null),
+            }
           : o,
       ),
     );
@@ -281,6 +446,7 @@ export default function AdminOrders() {
       const res = await updateMultiOrderStatusApi(
         selectedInFiltered,
         bulkOrderStatus,
+        reason,
       );
       const r = res.data.data;
       alert(
@@ -296,7 +462,9 @@ export default function AdminOrders() {
       setItems((prev) =>
         prev.map((o) => {
           const old = prevMap.get(o._id);
-          return old ? { ...o, status: old } : o;
+          return old
+            ? { ...o, status: old.status, failReason: old.failReason }
+            : o;
         }),
       );
     } finally {
@@ -342,6 +510,28 @@ export default function AdminOrders() {
           </option>
           <option value="delivered" className={DROPDOWN_OPTION_CLASS}>
             delivered
+          </option>
+          <option value="failed" className={DROPDOWN_OPTION_CLASS}>
+            failed
+          </option>
+        </select>
+
+        <select
+          value={paymentStatus}
+          onChange={(e) =>
+            setPaymentStatus(e.target.value as PaymentStatusFilter)
+          }
+          className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm text-white"
+          style={{ colorScheme: "dark" }}
+        >
+          <option value="all" className={DROPDOWN_OPTION_CLASS}>
+            All payment
+          </option>
+          <option value="pending" className={DROPDOWN_OPTION_CLASS}>
+            pending
+          </option>
+          <option value="paid" className={DROPDOWN_OPTION_CLASS}>
+            paid
           </option>
           <option value="failed" className={DROPDOWN_OPTION_CLASS}>
             failed
@@ -504,7 +694,7 @@ export default function AdminOrders() {
                       >
                         {o.orderCode}
                       </Link>
-                      {o.failReason ? (
+                      {o.status === "failed" && o.failReason ? (
                         <div className="mt-1 text-xs text-red-300/80 line-clamp-1">
                           Reason: {o.failReason}
                         </div>
