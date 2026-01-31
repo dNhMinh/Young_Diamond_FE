@@ -1,4 +1,3 @@
-// src/components/admin/modals/BannerFormModal.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import AdminModal from "./AdminModal";
 import type {
@@ -6,7 +5,9 @@ import type {
   BannerType,
   CreateBannerPayload,
 } from "../../../api/admin/banners.api";
-import { uploadToCloudinary } from "../../../utils/cloudinary";
+
+// ✅ chỉ banner dùng uploader mới (image/video)
+import { uploadBannerMediaToCloudinary } from "../../../utils/cloudinary";
 
 type Mode = "create" | "edit";
 
@@ -84,6 +85,20 @@ function optTrim(s: string) {
   return v ? v : undefined;
 }
 
+// ✅ helper detect video
+function isVideoUrl(url?: string) {
+  if (!url) return false;
+  const u = url.toLowerCase();
+  return (
+    u.includes("/video/") ||
+    u.endsWith(".mp4") ||
+    u.endsWith(".webm") ||
+    u.endsWith(".mov") ||
+    u.endsWith(".m4v") ||
+    u.endsWith(".ogg")
+  );
+}
+
 export default function BannerFormModal({
   open,
   mode,
@@ -108,6 +123,16 @@ export default function BannerFormModal({
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  // ✅ để preview đúng (img/video)
+  const [mediaKind, setMediaKind] = useState<"image" | "video">(
+    isVideoUrl(init.imageUrl) ? "video" : "image",
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    setMediaKind(isVideoUrl(init.imageUrl) ? "video" : "image");
+  }, [open, init.imageUrl]);
+
   if (!open) return null;
 
   const pickFile = () => fileRef.current?.click();
@@ -115,19 +140,21 @@ export default function BannerFormModal({
   const handleUpload = async (file?: File | null) => {
     if (!file) return;
 
-    // Optional: chặn file quá to (tùy bạn muốn)
-    // if (file.size > 8 * 1024 * 1024) return alert("File quá lớn (tối đa 8MB).");
-
     setUploading(true);
     try {
-      const result = await uploadToCloudinary(file);
+      const result = await uploadBannerMediaToCloudinary(file);
       const url = result.secure_url;
       if (!url) throw new Error("Missing secure_url from Cloudinary");
+
+      const isVideo =
+        result.resource_type === "video" || file.type.startsWith("video/");
+      setMediaKind(isVideo ? "video" : "image");
+
       setDraft((p) => ({ ...p, imageUrl: url }));
     } catch (e) {
       console.error(e);
       alert(
-        "Upload Cloudinary thất bại. Kiểm tra preset/cloud/folder trong .env",
+        "Upload Cloudinary thất bại. Kiểm tra upload preset có cho phép video và dung lượng file.",
       );
     } finally {
       setUploading(false);
@@ -136,7 +163,7 @@ export default function BannerFormModal({
 
   const submit = async () => {
     const imageUrl = draft.imageUrl.trim();
-    if (!imageUrl) return alert("Vui lòng upload ảnh banner (imageUrl).");
+    if (!imageUrl) return alert("Vui lòng upload media banner (image/video).");
 
     const payload: CreateBannerPayload = {
       imageUrl,
@@ -186,16 +213,19 @@ export default function BannerFormModal({
       }
     >
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {/* Image */}
+        {/* Media (Image/Video) */}
         <div className="md:col-span-2 rounded-lg border border-white/10 bg-[#0f0f0f] p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <div className="text-xs text-white/60">Banner image</div>
+            <div className="text-xs text-white/60">
+              Banner media (image/video)
+            </div>
 
             <div className="flex items-center gap-2">
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/*"
+                // ✅ cho phép upload cả ảnh hoặc video
+                accept="image/*,video/*"
                 className="hidden"
                 onChange={(e) => {
                   void handleUpload(e.target.files?.[0]);
@@ -215,7 +245,10 @@ export default function BannerFormModal({
               {draft.imageUrl ? (
                 <button
                   type="button"
-                  onClick={() => setDraft((p) => ({ ...p, imageUrl: "" }))}
+                  onClick={() => {
+                    setDraft((p) => ({ ...p, imageUrl: "" }));
+                    setMediaKind("image");
+                  }}
                   disabled={disabled}
                   className="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-60"
                 >
@@ -227,9 +260,11 @@ export default function BannerFormModal({
 
           <input
             value={draft.imageUrl}
-            onChange={(e) =>
-              setDraft((p) => ({ ...p, imageUrl: e.target.value }))
-            }
+            onChange={(e) => {
+              const v = e.target.value;
+              setDraft((p) => ({ ...p, imageUrl: v }));
+              setMediaKind(isVideoUrl(v) ? "video" : "image");
+            }}
             className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30"
             placeholder="https://..."
             disabled={disabled}
@@ -237,16 +272,27 @@ export default function BannerFormModal({
 
           <div className="mt-3">
             {draft.imageUrl ? (
-              <img
-                src={draft.imageUrl}
-                alt={draft.altText || "banner"}
-                className="max-h-48 w-full rounded-md bg-black/30 object-contain"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.display = "none";
-                }}
-              />
+              mediaKind === "video" ? (
+                <video
+                  src={draft.imageUrl}
+                  className="max-h-48 w-full rounded-md bg-black/30 object-contain"
+                  controls
+                  playsInline
+                  muted
+                />
+              ) : (
+                <img
+                  src={draft.imageUrl}
+                  alt={draft.altText || "banner"}
+                  className="max-h-48 w-full rounded-md bg-black/30 object-contain"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display =
+                      "none";
+                  }}
+                />
+              )
             ) : (
-              <div className="text-sm text-white/40">No image</div>
+              <div className="text-sm text-white/40">No media</div>
             )}
           </div>
         </div>

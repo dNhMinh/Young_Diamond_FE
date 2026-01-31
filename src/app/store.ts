@@ -1,3 +1,4 @@
+//src/app/store.ts
 import { configureStore } from "@reduxjs/toolkit";
 import adminAuthReducer from "../features/admin/auth/auth.slice";
 

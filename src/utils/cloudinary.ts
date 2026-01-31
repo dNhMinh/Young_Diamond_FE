@@ -45,3 +45,39 @@ export async function uploadToCloudinary(
   const data = (await res.json()) as CloudinaryUploadResult;
   return data;
 }
+
+export type CloudinaryUploadAnyResult = {
+  secure_url: string;
+  public_id: string;
+  resource_type?: "image" | "video" | "raw" | string;
+  format?: string;
+  width?: number;
+  height?: number;
+  duration?: number;
+};
+
+export async function uploadBannerMediaToCloudinary(
+  file: File,
+): Promise<CloudinaryUploadAnyResult> {
+  assertCloudinaryConfig();
+
+  const url = `https://api.cloudinary.com/v1_1/dzdxqw0i7/auto/upload`;
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("upload_preset", preset!);
+  if (folder) form.append("folder", folder);
+
+  const res = await fetch(url, {
+    method: "POST",
+    body: form,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Cloudinary upload failed: ${text}`);
+  }
+
+  const data = (await res.json()) as CloudinaryUploadAnyResult;
+  return data;
+}

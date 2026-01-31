@@ -1,3 +1,4 @@
+//src/types/product.ts
 export type ProductStatus = "active" | "inactive" | "out_of_stock";
 
 export interface ProductListItem {
@@ -32,3 +33,16 @@ export interface ProductDetail {
   slug: string;
   color: string[];
 }
+
+//client
+/** Một số endpoint (vd: /home/products-new) trả thêm metadata */
+export interface ProductMetaFields {
+  deleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  titleNomalized?: string;
+  __v?: number;
+}
+
+/** Product detail + metadata (dùng cho những endpoint trả dư field) */
+export type ProductDetailWithMeta = ProductDetail & ProductMetaFields;

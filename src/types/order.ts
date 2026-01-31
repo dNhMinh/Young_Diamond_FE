@@ -77,3 +77,30 @@ export interface OrderDetail {
   createdAt?: string;
   updatedAt?: string;
 }
+
+//client
+export type OrderCreatePayload = {
+  shippingInfo: {
+    fullName: string;
+    address: string;
+    phoneNumber: string;
+    email: string;
+    note?: string;
+  };
+  products: Array<{
+    productId: string;
+    quantity: number;
+    price: number; // theo API của bạn
+  }>;
+  payment: {
+    method: "cod" | "bank_transfer";
+    imageCheckPayment?: string; // required nếu bank_transfer
+  };
+  shippingCarrier: string; // code or id tuỳ backend bạn dùng
+};
+
+export type OrderCreateResponse = {
+  // backend bạn chưa đưa response mẫu => tạm để unknown fields
+  // bạn có thể bổ sung sau: orderCode, totalPrice, status...
+  [key: string]: any;
+};

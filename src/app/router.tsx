@@ -1,3 +1,4 @@
+//src/app/router.tsx
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import AdminLogin from "../pages/admin/login/Login";
 import Dashboard from "../pages/admin/dashboard/Dashboard";
@@ -15,8 +16,26 @@ import AdminOrders from "../pages/admin/orders/AdminOrders";
 import OrderDetailPage from "../pages/admin/orders/OrderDetailPage";
 import AdminSettingsPage from "../pages/admin/settings/AdminSettingsPage";
 import AdminBannersPage from "../pages/admin/banners/AdminBannersPage";
+import ClientLayout from "../layouts/ClientLayout";
+import HomePage from "../pages/client/home/HomePage";
+import ProductsPage from "../pages/client/products/ProductsPage";
+import ProductDetailPageClient from "../pages/client/products/ProductDetailPage";
 
 export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <ClientLayout />,
+    children: [
+      { index: true, element: <HomePage /> },
+      { path: "products", element: <ProductsPage /> },
+      { path: "products/:slug", element: <ProductDetailPageClient /> },
+      // { path: "cart", element: <CartPage /> },
+      // { path: "checkout", element: <CheckoutPage /> },
+      // { path: "order/success", element: <OrderSuccessPage /> },
+      // { path: "*", element: <NotFoundPage /> },
+    ],
+  },
+
   {
     path: "/admin/login",
     element: (
