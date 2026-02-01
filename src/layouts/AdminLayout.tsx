@@ -1,10 +1,15 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAppDispatch } from "../app/hooks";
 import { logout } from "../features/admin/auth/auth.slice";
+import {
+  ChatNotificationProvider,
+  useChatNotification,
+} from "../hooks/useChatNotification";
 
-export default function AdminLayout() {
+function AdminLayoutContent() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { unreadCount } = useChatNotification();
 
   const handleLogout = () => {
     dispatch(logout());
@@ -30,6 +35,7 @@ export default function AdminLayout() {
           <MenuItem to="/admin/reviews" label="Reviews" />
           <MenuItem to="/admin/banners" label="Banners" />
           <MenuItem to="/admin/settings" label="Settings" />
+          <MenuItem to="/admin/chat" label="Chat" badge={unreadCount} />
         </nav>
       </aside>
 
@@ -60,13 +66,21 @@ export default function AdminLayout() {
   );
 }
 
-function MenuItem({ to, label }: { to: string; label: string }) {
+function MenuItem({
+  to,
+  label,
+  badge,
+}: {
+  to: string;
+  label: string;
+  badge?: number;
+}) {
   return (
     <NavLink
       to={to}
       className={({ isActive }) =>
         `
-        group flex items-center rounded-lg px-4 py-2.5 text-sm font-medium transition
+        group flex items-center justify-between rounded-lg px-4 py-2.5 text-sm font-medium transition
         ${
           isActive
             ? "bg-white/10 text-white"
@@ -76,6 +90,19 @@ function MenuItem({ to, label }: { to: string; label: string }) {
       }
     >
       <span className="tracking-wide">{label}</span>
+      {badge !== undefined && badge > 0 && (
+        <span className="ml-2 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
     </NavLink>
+  );
+}
+
+export default function AdminLayout() {
+  return (
+    <ChatNotificationProvider>
+      <AdminLayoutContent />
+    </ChatNotificationProvider>
   );
 }

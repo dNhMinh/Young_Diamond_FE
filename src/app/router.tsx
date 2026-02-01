@@ -20,6 +20,8 @@ import ClientLayout from "../layouts/ClientLayout";
 import HomePage from "../pages/client/home/HomePage";
 import ProductsPage from "../pages/client/products/ProductsPage";
 import ProductDetailPageClient from "../pages/client/products/ProductDetailPage";
+import ChatPage from "../pages/client/chat/ChatPage";
+import AdminChatPage from "../pages/admin/chat/AdminChatPage";
 
 export const router = createBrowserRouter([
   {
@@ -29,6 +31,7 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: "products", element: <ProductsPage /> },
       { path: "products/:slug", element: <ProductDetailPageClient /> },
+      { path: "chat", element: <ChatPage /> },
       // { path: "cart", element: <CartPage /> },
       // { path: "checkout", element: <CheckoutPage /> },
       // { path: "order/success", element: <OrderSuccessPage /> },
@@ -81,6 +84,7 @@ export const router = createBrowserRouter([
       { path: "orders/:orderId", element: <OrderDetailPage /> },
       { path: "settings", element: <AdminSettingsPage /> },
       { path: "banners", element: <AdminBannersPage /> },
+      { path: "chat", element: <AdminChatPage /> },
     ],
   },
 ]);

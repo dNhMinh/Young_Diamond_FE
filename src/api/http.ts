@@ -1,18 +1,20 @@
 //src/api/http.ts
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1";
+const baseURL = import.meta.env.VITE_API_URL || "/api/v1";
 
 // Public client (không token)
 export const httpPublic = axios.create({
   baseURL,
   headers: { "Content-Type": "application/json" },
+  withCredentials: true,
 });
 
 // Admin (có token)
 export const httpAdmin = axios.create({
   baseURL,
   headers: { "Content-Type": "application/json" },
+  withCredentials: true,
 });
 
 httpAdmin.interceptors.request.use((config) => {
