@@ -20,6 +20,9 @@ import ClientLayout from "../layouts/ClientLayout";
 import HomePage from "../pages/client/home/HomePage";
 import ProductsPage from "../pages/client/products/ProductsPage";
 import ProductDetailPageClient from "../pages/client/products/ProductDetailPage";
+import CartPage from "../pages/client/cart/CartPage";
+import CheckoutPage from "../pages/client/checkout/CheckoutPage";
+import OrderSuccessPage from "../pages/client/checkout/OrderSuccessPage";
 
 export const router = createBrowserRouter([
   {
@@ -29,9 +32,9 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: "products", element: <ProductsPage /> },
       { path: "products/:slug", element: <ProductDetailPageClient /> },
-      // { path: "cart", element: <CartPage /> },
-      // { path: "checkout", element: <CheckoutPage /> },
-      // { path: "order/success", element: <OrderSuccessPage /> },
+      { path: "cart", element: <CartPage /> },
+      { path: "checkout", element: <CheckoutPage /> },
+      { path: "order/success", element: <OrderSuccessPage /> },
       // { path: "*", element: <NotFoundPage /> },
     ],
   },
