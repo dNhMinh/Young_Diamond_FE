@@ -1,3 +1,4 @@
+//src/api/client/settings.api.ts
 import { httpPublic } from "../http";
 import type { ApiResponse } from "../../types/client";
 

@@ -46,7 +46,7 @@ export default function OrderSuccessPage() {
             </div>
 
             <div className="mt-3 text-xs text-neutral-500">
-              * Bạn có thể dùng mã này để đối soát đơn hàng khi cần.
+              Quý khách có thể lưu lại mã này để check tình trạng đơn với shop.
             </div>
           </div>
 

@@ -6,6 +6,7 @@
 // import ProductGallery from "../../../components/client/products/ProductGallery";
 // import { productsApi } from "../../../api/client/products.api";
 // import type { ProductDetail, ProductSize } from "../../../types/product";
+// import { useCart } from "../../../context/CartContext";
 
 // type ApiErrorResponse = {
 //   message?: string;
@@ -60,6 +61,9 @@
 //   // size/color
 //   const [selectedSizeId, setSelectedSizeId] = useState<string | null>(null);
 //   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+
+//   // ✅ cart
+//   const { addItem } = useCart();
 
 //   useEffect(() => {
 //     let alive = true;
@@ -147,13 +151,32 @@
 //     if (!product) return;
 //     if (!inStock) return;
 
-//     console.log("ADD TO BAG", {
+//     // ✅ Lấy ảnh đại diện: ưu tiên images[0], fallback thumbnail nếu có
+//     const thumb =
+//       images[0] ||
+//       (product as unknown as { thumbnail?: string }).thumbnail ||
+//       "";
+
+//     const sizeLabel = selectedSize
+//       ? selectedSize.freeSize
+//         ? "FREE"
+//         : selectedSize.size
+//       : undefined;
+
+//     addItem({
 //       productId: product._id,
+//       title: product.title,
+//       image: thumb,
+//       price: product.price, // giữ giá gốc
+//       discount:
+//         typeof product.discount === "number" ? product.discount : undefined,
+//       quantity: 1,
 //       sizeId: selectedSizeId,
-//       size: selectedSize?.size,
+//       sizeLabel,
 //       color: selectedColor,
-//       qty: 1,
 //     });
+
+//     // nếu bạn muốn auto chuyển sang giỏ sau khi add thì nói mình, mình thêm 1 dòng nav("/cart")
 //   };
 
 //   if (loading) {
@@ -352,6 +375,7 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
 import ProductGallery from "../../../components/client/products/ProductGallery";
+import CartDrawer from "../../../components/client/cart/CartDrawer";
 import { productsApi } from "../../../api/client/products.api";
 import type { ProductDetail, ProductSize } from "../../../types/product";
 import { useCart } from "../../../context/CartContext";
@@ -412,6 +436,11 @@ export default function ProductDetailPage() {
 
   // ✅ cart
   const { addItem } = useCart();
+
+  // ✅ Drawer panel (Cart)
+  const [cartOpen, setCartOpen] = useState(false);
+  const openCart = () => setCartOpen(true);
+  const closeCart = () => setCartOpen(false);
 
   useEffect(() => {
     let alive = true;
@@ -499,7 +528,6 @@ export default function ProductDetailPage() {
     if (!product) return;
     if (!inStock) return;
 
-    // ✅ Lấy ảnh đại diện: ưu tiên images[0], fallback thumbnail nếu có
     const thumb =
       images[0] ||
       (product as unknown as { thumbnail?: string }).thumbnail ||
@@ -524,7 +552,7 @@ export default function ProductDetailPage() {
       color: selectedColor,
     });
 
-    // nếu bạn muốn auto chuyển sang giỏ sau khi add thì nói mình, mình thêm 1 dòng nav("/cart")
+    openCart();
   };
 
   if (loading) {
@@ -552,6 +580,9 @@ export default function ProductDetailPage() {
 
   return (
     <div className="bg-white text-black">
+      {/* ✅ Cart Drawer as reusable component */}
+      <CartDrawer open={cartOpen} onClose={closeCart} />
+
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <div className="text-sm text-neutral-500 flex flex-wrap items-center gap-2 mb-8">
@@ -569,18 +600,15 @@ export default function ProductDetailPage() {
 
         {/* Main */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          {/* Gallery (✅ giữ zoom như cũ nằm trong ProductGallery) */}
           <div className="lg:col-span-7">
             <ProductGallery images={images} title={product.title} />
           </div>
 
-          {/* Info */}
           <div className="lg:col-span-5">
             <h1 className="text-2xl md:text-3xl tracking-wide font-semibold">
               {product.title}
             </h1>
 
-            {/* Price */}
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <div className="text-lg tracking-wide text-black font-semibold">
                 {formatVND(discountedPrice)}
@@ -591,8 +619,6 @@ export default function ProductDetailPage() {
                   <div className="text-sm text-neutral-400 line-through">
                     {formatVND(product.price)}
                   </div>
-
-                  {/* Badge discount */}
                   <span className="inline-flex items-center h-6 px-2 rounded-full text-[11px] font-semibold tracking-[0.14em] uppercase bg-black text-white">
                     -{product.discount}%
                   </span>
@@ -620,10 +646,13 @@ export default function ProductDetailPage() {
                     type="button"
                     onClick={() => setSelectedSizeId(s._id)}
                     className={[
-                      "h-12 w-16 border text-sm tracking-wide transition",
+                      "h-12 w-16 rounded-lg border text-sm tracking-wide",
+                      "cursor-pointer transition-all duration-200",
+                      "outline-none focus-visible:ring-2 focus-visible:ring-black/60 focus-visible:ring-offset-2",
+                      "active:scale-[0.98]",
                       active
-                        ? "border-black text-black"
-                        : "border-black/30 text-black/70 hover:border-black/60",
+                        ? "border-black bg-black text-white shadow-sm"
+                        : "border-black/20 bg-white text-black/70 hover:border-black hover:text-black hover:shadow-sm hover:-translate-y-[1px]",
                     ].join(" ")}
                     title={s.freeSize ? "Free size" : s.type}
                   >
@@ -648,10 +677,13 @@ export default function ProductDetailPage() {
                         type="button"
                         onClick={() => setSelectedColor(c)}
                         className={[
-                          "h-10 px-4 border text-sm tracking-wide capitalize transition",
+                          "h-10 px-4 rounded-full border text-sm tracking-wide capitalize",
+                          "cursor-pointer transition-all duration-200",
+                          "outline-none focus-visible:ring-2 focus-visible:ring-black/60 focus-visible:ring-offset-2",
+                          "active:scale-[0.98]",
                           active
-                            ? "border-black text-black"
-                            : "border-black/30 text-black/70 hover:border-black/60",
+                            ? "border-black bg-black text-white shadow-sm"
+                            : "border-black/20 bg-white text-black/70 hover:border-black hover:text-black hover:shadow-sm hover:-translate-y-[1px]",
                         ].join(" ")}
                       >
                         {c}
@@ -662,28 +694,63 @@ export default function ProductDetailPage() {
               </>
             ) : null}
 
-            {/* Add to bag */}
             <button
               type="button"
               onClick={onAddToBag}
               disabled={!inStock}
               className={[
-                "mt-8 w-full h-14 flex items-center justify-between px-6 tracking-wide transition",
+                "mt-8 w-full h-14 px-6 rounded-xl",
+                "flex items-center justify-between",
+                "tracking-wide transition-all duration-200",
+                "outline-none focus-visible:ring-2 focus-visible:ring-black/60 focus-visible:ring-offset-2",
                 inStock
-                  ? "bg-black text-white hover:opacity-95"
+                  ? "bg-black text-white cursor-pointer hover:shadow-lg hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.99]"
                   : "bg-black/30 text-white/70 cursor-not-allowed",
               ].join(" ")}
             >
               <span className="text-sm font-semibold">
                 {inStock ? "ADD TO BAG" : "OUT OF STOCK"}
               </span>
-              <span className="text-lg">▢</span>
+
+              {/* icon bag */}
+              <span
+                className={[
+                  "inline-flex items-center justify-center",
+                  "h-9 w-9 rounded-full border",
+                  inStock
+                    ? "border-white/15 bg-white/5 transition-all duration-200 group-hover:bg-white/10"
+                    : "border-white/10 bg-white/5",
+                ].join(" ")}
+                aria-hidden
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className={inStock ? "transition-transform duration-200" : ""}
+                >
+                  <path
+                    d="M7 9V7a5 5 0 0 1 10 0v2"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M6 9h12l-1 12H7L6 9Z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
             </button>
 
-            {/* divider */}
             <div className="mt-8 border-t border-black/10" />
 
-            {/* details */}
             <div className="mt-6">
               <div className="text-sm font-semibold tracking-wide text-black">
                 details
@@ -693,14 +760,11 @@ export default function ProductDetailPage() {
                 {product.description ? (
                   <li className="leading-relaxed">{product.description}</li>
                 ) : null}
-                <li className="leading-relaxed">
-                  Status: <span className="uppercase">{product.status}</span>
-                </li>
+
                 <li className="leading-relaxed">Stock: {product.stock}</li>
               </ul>
             </div>
 
-            {/* accordion */}
             <div className="mt-8">
               <AccordionRow title="Chính Sách Thanh Toán" defaultOpen>
                 Thanh toán COD / chuyển khoản.
