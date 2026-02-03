@@ -22,6 +22,9 @@ import ProductsPage from "../pages/client/products/ProductsPage";
 import ProductDetailPageClient from "../pages/client/products/ProductDetailPage";
 import ChatPage from "../pages/client/chat/ChatPage";
 import AdminChatPage from "../pages/admin/chat/AdminChatPage";
+import CartPage from "../pages/client/cart/CartPage";
+import CheckoutPage from "../pages/client/checkout/CheckoutPage";
+import OrderSuccessPage from "../pages/client/checkout/OrderSuccessPage";
 
 export const router = createBrowserRouter([
   {
@@ -35,6 +38,9 @@ export const router = createBrowserRouter([
       // { path: "cart", element: <CartPage /> },
       // { path: "checkout", element: <CheckoutPage /> },
       // { path: "order/success", element: <OrderSuccessPage /> },
+      { path: "cart", element: <CartPage /> },
+      { path: "checkout", element: <CheckoutPage /> },
+      { path: "order/success", element: <OrderSuccessPage /> },
       // { path: "*", element: <NotFoundPage /> },
     ],
   },

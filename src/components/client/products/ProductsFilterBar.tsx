@@ -1,3 +1,4 @@
+//src/components/client/products/ProductsFilterBar.tsx
 import type { ProductListQuery } from "../../../types/client";
 
 type Props = {
@@ -62,12 +63,12 @@ export default function ProductsFilterBar({ query, onApply, onReset }: Props) {
         {/* Search */}
         <div className="md:col-span-4">
           <label className="block text-xs tracking-widest uppercase text-neutral-500 mb-2">
-            Search
+            Tìm kiếm
           </label>
           <input
             name="searchKey"
             defaultValue={q}
-            placeholder="Tìm sản phẩm..."
+            placeholder="Nhập tên sản phẩm..."
             className="w-full h-10 px-4 rounded-md border border-neutral-300 outline-none focus:border-black"
           />
         </div>
@@ -75,36 +76,36 @@ export default function ProductsFilterBar({ query, onApply, onReset }: Props) {
         {/* Type */}
         <div className="md:col-span-2">
           <label className="block text-xs tracking-widest uppercase text-neutral-500 mb-2">
-            Type
+            Loại
           </label>
           <select
             name="type"
             defaultValue={type}
             className="w-full h-10 px-3 rounded-md border border-neutral-300 outline-none focus:border-black bg-white"
           >
-            <option value="">All</option>
-            <option value="new">New</option>
-            <option value="sales">Sales</option>
+            <option value="">Tất cả</option>
+            <option value="new">Sản phẩm mới</option>
+            <option value="sales">Đang giảm giá</option>
           </select>
         </div>
 
         {/* Price */}
         <div className="md:col-span-3">
           <label className="block text-xs tracking-widest uppercase text-neutral-500 mb-2">
-            Price
+            Giá
           </label>
           <div className="flex gap-2">
             <input
               name="minPrice"
               defaultValue={minPrice}
-              placeholder="Min"
+              placeholder="Từ"
               inputMode="numeric"
               className="w-full h-10 px-3 rounded-md border border-neutral-300 outline-none focus:border-black"
             />
             <input
               name="maxPrice"
               defaultValue={maxPrice}
-              placeholder="Max"
+              placeholder="Đến"
               inputMode="numeric"
               className="w-full h-10 px-3 rounded-md border border-neutral-300 outline-none focus:border-black"
             />
@@ -114,7 +115,7 @@ export default function ProductsFilterBar({ query, onApply, onReset }: Props) {
         {/* Sort */}
         <div className="md:col-span-3">
           <label className="block text-xs tracking-widest uppercase text-neutral-500 mb-2">
-            Sort
+            Sắp xếp
           </label>
           <div className="flex gap-2">
             <select
@@ -122,9 +123,9 @@ export default function ProductsFilterBar({ query, onApply, onReset }: Props) {
               defaultValue={sortKey}
               className="w-full h-10 px-3 rounded-md border border-neutral-300 outline-none focus:border-black bg-white"
             >
-              <option value="">None</option>
-              <option value="price">Price</option>
-              <option value="createdAt">CreatedAt</option>
+              <option value="">Không</option>
+              <option value="price">Theo giá</option>
+              <option value="createdAt">Thời gian</option>
             </select>
 
             <select
@@ -133,8 +134,8 @@ export default function ProductsFilterBar({ query, onApply, onReset }: Props) {
               className="w-full h-10 px-3 rounded-md border border-neutral-300 outline-none focus:border-black bg-white"
             >
               <option value="">—</option>
-              <option value="asc">ASC</option>
-              <option value="desc">DESC</option>
+              <option value="asc">Tăng dần</option>
+              <option value="desc">Giảm dần</option>
             </select>
           </div>
         </div>
@@ -145,14 +146,14 @@ export default function ProductsFilterBar({ query, onApply, onReset }: Props) {
           type="submit"
           className="px-4 py-2 rounded-md bg-black text-white text-sm hover:opacity-90"
         >
-          Apply
+          Áp dụng
         </button>
         <button
           type="button"
           onClick={onReset}
           className="px-4 py-2 rounded-md border border-neutral-300 text-sm hover:bg-neutral-100"
         >
-          Reset
+          Đặt lại
         </button>
       </div>
     </form>

@@ -1,3 +1,4 @@
+//src/components/client/common/Header.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Link,
@@ -8,6 +9,7 @@ import {
 import { homeApi } from "../../../api/client/home.api";
 import type { HomeCategory } from "../../../api/client/home.api";
 import logoImg from "../../../assets/YDlogo.jpg";
+import { useCart } from "../../../context/CartContext";
 
 type MenuKey =
   | "home"
@@ -49,12 +51,63 @@ function findCategoryIdBySlug(categories: HomeCategory[], slug: string) {
   return hit?._id;
 }
 
+/** label hiển thị cho category (an toàn nếu BE đổi field name) */
+function getCategoryLabel(c: HomeCategory) {
+  const maybe = c as unknown as {
+    name?: string;
+    title?: string;
+    label?: string;
+    slug?: string;
+  };
+  const raw =
+    maybe.name || maybe.title || maybe.label || maybe.slug || "CATEGORY";
+  return String(raw);
+}
+
+function CartIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M6.5 7h14l-1.2 7.2a2 2 0 0 1-2 1.8H9.1a2 2 0 0 1-2-1.6L5.7 4.8A1.8 1.8 0 0 0 4 3.5H2.8"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 20.5a1 1 0 1 0 0.01 0"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M18 20.5a1 1 0 1 0 0.01 0"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [categories, setCategories] = useState<HomeCategory[]>([]);
+  const [shopHoverOpen, setShopHoverOpen] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const { totals } = useCart();
+  const cartCount = totals.itemCount; // tổng số lượng item (qty)
 
   // dùng ref để tránh setState trong effect
   const searchRefDesktop = useRef<HTMLInputElement | null>(null);
@@ -120,11 +173,11 @@ export default function Header() {
         src={logoImg}
         alt="Young Diamond"
         className="
-        h-7 md:h-8 lg:h-9
-        w-auto
-        object-contain
-        select-none
-      "
+          h-7 md:h-8 lg:h-9
+          w-auto
+          object-contain
+          select-none
+        "
         loading="eager"
         draggable={false}
       />
@@ -181,10 +234,106 @@ export default function Header() {
   const isCategoryKey = (k: MenuKey) =>
     k === "bracelet" || k === "necklace" || k === "earring" || k === "hat";
 
+  // SHOP dropdown (desktop only)
+  const renderShopDesktop = () => {
+    const to = getMenuLink("shop") || "/";
+    const active = activeKey === "shop";
+
+    // class giống hệt các nav item khác
+    const linkClass = `text-xs tracking-[0.2em] uppercase pb-1 ${cnActive(active)}`;
+
+    return (
+      <div
+        key="shop"
+        className="relative inline-flex items-center"
+        onMouseEnter={() => setShopHoverOpen(true)}
+        onMouseLeave={() => setShopHoverOpen(false)}
+      >
+        {/* Click vẫn vào All Products như cũ */}
+        <Link
+          to={to}
+          className={`${linkClass} inline-flex items-center gap-2 leading-none`}
+          aria-haspopup="menu"
+          aria-expanded={shopHoverOpen}
+          onFocus={() => setShopHoverOpen(true)}
+          onBlur={() => setShopHoverOpen(false)}
+        >
+          <span>SHOP</span>
+          {/* caret nhỏ cho đúng dropdown, màu ăn theo text */}
+          <span className={active ? "text-white" : "text-neutral-400"}>▾</span>
+        </Link>
+
+        {shopHoverOpen ? (
+          <>
+            {/* Hover bridge */}
+            <div className="absolute left-0 right-0 top-full h-3" aria-hidden />
+
+            {/* Dropdown */}
+            <div
+              className="
+              absolute left-1/2 -translate-x-1/2
+              top-full pt-3 z-50
+            "
+              role="menu"
+            >
+              <div
+                className="
+                min-w-[240px]
+                bg-black/95 backdrop-blur
+                border border-white/10
+                shadow-xl
+                overflow-hidden
+              "
+              >
+                <div className="py-2">
+                  {categories.length === 0 ? (
+                    <div className="px-4 py-2 text-xs text-neutral-400">
+                      Đang tải danh mục...
+                    </div>
+                  ) : (
+                    categories.map((c) => {
+                      const catTo = buildProductsUrl({
+                        product_category_id: c._id,
+                        page: 1,
+                        limit: 12,
+                      });
+
+                      return (
+                        <Link
+                          key={c._id}
+                          to={catTo}
+                          onClick={() => setShopHoverOpen(false)}
+                          className="
+                          block px-4 py-2
+                          text-sm text-neutral-200
+                          hover:bg-white/5 hover:text-white
+                          transition
+                        "
+                          role="menuitem"
+                        >
+                          {getCategoryLabel(c)}
+                        </Link>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : null}
+      </div>
+    );
+  };
+
   const renderNavItem = (
     it: (typeof menu)[number],
     variant: "desktop" | "mobile",
   ) => {
+    // Desktop: SHOP dùng dropdown, các mục khác giữ nguyên
+    if (variant === "desktop" && it.key === "shop") {
+      return renderShopDesktop();
+    }
+
     const to = getMenuLink(it.key);
     const disabled = isCategoryKey(it.key) && to === null;
     const active = activeKey === it.key;
@@ -276,13 +425,40 @@ export default function Header() {
             </form>
 
             {/* Cart */}
+
             <Link
               to="/cart"
-              className="h-9 w-9 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/5"
+              className={[
+                "relative h-9 w-10 rounded-full border border-white/15",
+                "flex items-center justify-center",
+                "hover:bg-white/5 transition",
+                "active:scale-[0.98]",
+              ].join(" ")}
               aria-label="Cart"
-              title="Cart"
+              title="Giỏ hàng"
             >
-              <span className="text-white">🛒</span>
+              <span className="text-white">
+                <CartIcon />
+              </span>
+
+              {/* Badge số lượng (nếu không muốn thì xoá block này) */}
+              {cartCount > 0 ? (
+                <span
+                  className="
+                    absolute -top-1 -right-1
+                    min-w-5 h-5 px-1
+                    rounded-full
+                    bg-white text-black
+                    text-[11px] font-semibold
+                    grid place-items-center
+                    border border-black/20
+                    select-none
+                  "
+                  aria-label={`Cart items: ${cartCount}`}
+                >
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              ) : null}
             </Link>
 
             {/* Mobile menu */}
