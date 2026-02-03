@@ -9,38 +9,38 @@
 
 // export type PaymentStatus = "pending" | "paid" | "failed";
 
-// export type ApiResponse<T> = {
-//   success?: boolean;
-//   message: string;
-//   data: T;
-// };
+export type ApiResponse<T> = {
+  success?: boolean;
+  message: string;
+  data: T;
+};
 
-// export type BulkUpdateResult = {
-//   acknowledged: boolean;
-//   modifiedCount: number;
-//   matchedCount: number;
-//   upsertedId: string | null;
-//   upsertedCount: number;
-// };
+export type BulkUpdateResult = {
+  acknowledged: boolean;
+  modifiedCount: number;
+  matchedCount: number;
+  upsertedId: string | null;
+  upsertedCount: number;
+};
 
-// export type MongoUpdateManyResult = {
-//   acknowledged: boolean;
-//   matchedCount: number;
-//   modifiedCount: number;
-//   upsertedCount: number;
-//   upsertedId: unknown | null;
-// };
+export type MongoUpdateManyResult = {
+  acknowledged: boolean;
+  matchedCount: number;
+  modifiedCount: number;
+  upsertedCount: number;
+  upsertedId: unknown | null;
+};
 
-// export interface OrderListItem {
-//   _id: string;
-//   orderCode: string;
-//   totalAmount: number;
-//   status: OrderStatus;
-//   paymentStatus?: PaymentStatus;
-//   shippingCarrierCode?: string;
-//   failReason?: string | null;
-//   createdAt?: string;
-// }
+export interface OrderListItem {
+  _id: string;
+  orderCode: string;
+  totalAmount: number;
+  status: OrderStatus;
+  paymentStatus?: PaymentStatus;
+  shippingCarrierCode?: string;
+  failReason?: string | null;
+  createdAt?: string;
+}
 
 // export interface ShippingInfo {
 //   fullName: string;
