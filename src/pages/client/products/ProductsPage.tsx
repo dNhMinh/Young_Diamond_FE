@@ -1,9 +1,10 @@
+//src/pages/client/products/ProductsPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { productsApi } from "../../../api/client/products.api";
 import type { ProductCardDTO } from "../../../api/client/products.api";
 import type { ProductListQuery } from "../../../types/client";
-import ProductsFilterBar from "../../../components/client/products/ProductsFilterBar";
+// import ProductsFilterBar from "../../../components/client/products/ProductsFilterBar";
 import ProductGrid from "../../../components/client/products/ProductGrid";
 import PaginationLite from "../../../components/client/products/PaginationLite";
 
@@ -124,19 +125,19 @@ export default function ProductsPage() {
 
   const hasNext = products.length === (query.limit ?? 12);
 
-  const onApply = (next: ProductListQuery) => {
-    setSearchParamsFromQuery(setSearchParams, next);
-  };
+  // const onApply = (next: ProductListQuery) => {
+  //   setSearchParamsFromQuery(setSearchParams, next);
+  // };
 
-  const onReset = () => {
-    // giữ category nếu bạn muốn reset mà vẫn ở category
-    const keepCategory = query.product_category_id;
-    setSearchParamsFromQuery(setSearchParams, {
-      page: 1,
-      limit: 12,
-      product_category_id: keepCategory,
-    });
-  };
+  // const onReset = () => {
+  //   // giữ category nếu bạn muốn reset mà vẫn ở category
+  //   const keepCategory = query.product_category_id;
+  //   setSearchParamsFromQuery(setSearchParams, {
+  //     page: 1,
+  //     limit: 12,
+  //     product_category_id: keepCategory,
+  //   });
+  // };
 
   const onPrev = () => {
     const page = query.page ?? 1;
@@ -158,12 +159,9 @@ export default function ProductsPage() {
             Young Diamond
           </div>
           <h1 className="mt-2 text-2xl md:text-3xl font-semibold">Products</h1>
-          <div className="mt-2 text-sm text-neutral-600">
-            Lọc theo category / search / price / sort.
-          </div>
         </div>
 
-        <ProductsFilterBar query={query} onApply={onApply} onReset={onReset} />
+        {/* <ProductsFilterBar query={query} onApply={onApply} onReset={onReset} /> */}
 
         {loading ? (
           <div className="py-8 text-sm text-neutral-500">Loading...</div>

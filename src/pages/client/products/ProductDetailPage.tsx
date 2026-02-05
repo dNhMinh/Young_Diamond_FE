@@ -753,7 +753,7 @@ export default function ProductDetailPage() {
 
             <div className="mt-6">
               <div className="text-sm font-semibold tracking-wide text-black">
-                details
+                Chi tiết
               </div>
 
               <ul className="mt-4 space-y-2 text-sm text-neutral-700">
@@ -761,7 +761,9 @@ export default function ProductDetailPage() {
                   <li className="leading-relaxed">{product.description}</li>
                 ) : null}
 
-                <li className="leading-relaxed">Stock: {product.stock}</li>
+                <li className="leading-relaxed">
+                  Số lượng còn lại: {product.stock}
+                </li>
               </ul>
             </div>
 
@@ -769,9 +771,8 @@ export default function ProductDetailPage() {
               <AccordionRow title="Chính Sách Thanh Toán" defaultOpen>
                 Thanh toán COD / chuyển khoản.
               </AccordionRow>
-              <AccordionRow title="Vận Chuyển & Đổi Trả">
-                Giao hàng 1–3 ngày nội thành, 3–7 ngày toàn quốc. Đổi trả trong
-                7 ngày.
+              <AccordionRow title="Vận Chuyển">
+                Thời gian giao hàng dự kiến 3 - 5 ngày (Tùy khu vực).
               </AccordionRow>
             </div>
           </div>
