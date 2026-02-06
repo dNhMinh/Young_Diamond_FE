@@ -18,7 +18,9 @@ type MenuKey =
   | "necklace"
   | "earring"
   | "hat"
-  | "contact";
+  | "agent_request";
+
+const AGENT_ROUTE = "/agent-request";
 
 const menu: Array<{ key: MenuKey; label: string }> = [
   { key: "home", label: "HOME" },
@@ -27,7 +29,7 @@ const menu: Array<{ key: MenuKey; label: string }> = [
   { key: "necklace", label: "VÒNG CỔ" },
   { key: "earring", label: "KHUYÊN TAI" },
   { key: "hat", label: "MŨ" },
-  { key: "contact", label: "LIÊN HỆ" },
+  { key: "agent_request", label: "ĐĂNG KÝ ĐẠI LÝ" },
 ];
 
 function cnActive(active: boolean) {
@@ -107,9 +109,8 @@ export default function Header() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { totals } = useCart();
-  const cartCount = totals.itemCount; // tổng số lượng item (qty)
+  const cartCount = totals.itemCount;
 
-  // dùng ref để tránh setState trong effect
   const searchRefDesktop = useRef<HTMLInputElement | null>(null);
   const searchRefMobile = useRef<HTMLInputElement | null>(null);
 
@@ -172,12 +173,7 @@ export default function Header() {
       <img
         src={logoImg}
         alt="Young Diamond"
-        className="
-          h-7 md:h-8 lg:h-9
-          w-auto
-          object-contain
-          select-none
-        "
+        className="h-7 md:h-8 lg:h-9 w-auto object-contain select-none"
         loading="eager"
         draggable={false}
       />
@@ -186,7 +182,7 @@ export default function Header() {
 
   const getMenuLink = (key: MenuKey): string | null => {
     if (key === "home") return "/";
-    if (key === "contact") return "/contact";
+    if (key === "agent_request") return AGENT_ROUTE;
     if (key === "shop") return buildProductsUrl({ page: 1, limit: 12 });
 
     const id =
@@ -205,7 +201,7 @@ export default function Header() {
 
   const activeKey: MenuKey | null = useMemo(() => {
     if (location.pathname === "/") return "home";
-    if (location.pathname.startsWith("/contact")) return "contact";
+    if (location.pathname.startsWith(AGENT_ROUTE)) return "agent_request";
 
     if (location.pathname === "/products") {
       const sp = new URLSearchParams(location.search);
@@ -238,8 +234,6 @@ export default function Header() {
   const renderShopDesktop = () => {
     const to = getMenuLink("shop") || "/";
     const active = activeKey === "shop";
-
-    // class giống hệt các nav item khác
     const linkClass = `text-xs tracking-[0.2em] uppercase pb-1 ${cnActive(active)}`;
 
     return (
@@ -249,7 +243,6 @@ export default function Header() {
         onMouseEnter={() => setShopHoverOpen(true)}
         onMouseLeave={() => setShopHoverOpen(false)}
       >
-        {/* Click vẫn vào All Products như cũ */}
         <Link
           to={to}
           className={`${linkClass} inline-flex items-center gap-2 leading-none`}
@@ -259,32 +252,17 @@ export default function Header() {
           onBlur={() => setShopHoverOpen(false)}
         >
           <span>SHOP</span>
-          {/* caret nhỏ cho đúng dropdown, màu ăn theo text */}
           <span className={active ? "text-white" : "text-neutral-400"}>▾</span>
         </Link>
 
         {shopHoverOpen ? (
           <>
-            {/* Hover bridge */}
             <div className="absolute left-0 right-0 top-full h-3" aria-hidden />
-
-            {/* Dropdown */}
             <div
-              className="
-              absolute left-1/2 -translate-x-1/2
-              top-full pt-3 z-50
-            "
+              className="absolute left-1/2 -translate-x-1/2 top-full pt-3 z-50"
               role="menu"
             >
-              <div
-                className="
-                min-w-[240px]
-                bg-black/95 backdrop-blur
-                border border-white/10
-                shadow-xl
-                overflow-hidden
-              "
-              >
+              <div className="min-w-[240px] bg-black/95 backdrop-blur border border-white/10 shadow-xl overflow-hidden">
                 <div className="py-2">
                   {categories.length === 0 ? (
                     <div className="px-4 py-2 text-xs text-neutral-400">
@@ -303,12 +281,7 @@ export default function Header() {
                           key={c._id}
                           to={catTo}
                           onClick={() => setShopHoverOpen(false)}
-                          className="
-                          block px-4 py-2
-                          text-sm text-neutral-200
-                          hover:bg-white/5 hover:text-white
-                          transition
-                        "
+                          className="block px-4 py-2 text-sm text-neutral-200 hover:bg-white/5 hover:text-white transition"
                           role="menuitem"
                         >
                           {getCategoryLabel(c)}
@@ -329,7 +302,6 @@ export default function Header() {
     it: (typeof menu)[number],
     variant: "desktop" | "mobile",
   ) => {
-    // Desktop: SHOP dùng dropdown, các mục khác giữ nguyên
     if (variant === "desktop" && it.key === "shop") {
       return renderShopDesktop();
     }
@@ -362,7 +334,6 @@ export default function Header() {
       );
     }
 
-    // mobile
     if (disabled) {
       return (
         <span
@@ -396,19 +367,15 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-black/90 backdrop-blur border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4">
         <div className="h-16 flex items-center justify-between gap-3">
-          {/* Left: Logo */}
           <Link to="/" className="shrink-0" aria-label="Young Diamond">
             {logo}
           </Link>
 
-          {/* Center: Nav (desktop) */}
           <nav className="hidden lg:flex items-center justify-center gap-7 flex-1">
             {menu.map((it) => renderNavItem(it, "desktop"))}
           </nav>
 
-          {/* Right */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Search (desktop) */}
             <form
               onSubmit={submitSearch}
               className="hidden md:flex items-center"
@@ -423,8 +390,6 @@ export default function Header() {
                 />
               </div>
             </form>
-
-            {/* Cart */}
 
             <Link
               to="/cart"
@@ -441,7 +406,6 @@ export default function Header() {
                 <CartIcon />
               </span>
 
-              {/* Badge số lượng (nếu không muốn thì xoá block này) */}
               {cartCount > 0 ? (
                 <span
                   className="
@@ -461,7 +425,6 @@ export default function Header() {
               ) : null}
             </Link>
 
-            {/* Mobile menu */}
             <button
               className="lg:hidden h-9 w-9 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/5"
               type="button"
@@ -474,11 +437,9 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile drawer */}
       {open ? (
         <div className="lg:hidden border-t border-white/10 bg-black">
           <div className="max-w-7xl mx-auto px-4 py-4">
-            {/* Search mobile */}
             <form onSubmit={submitSearch} className="flex items-center gap-2">
               <div className="flex items-center border border-white/15 rounded-full px-3 h-10 flex-1 bg-black/40">
                 <span className="text-neutral-300 text-sm mr-2">⌕</span>
@@ -497,7 +458,6 @@ export default function Header() {
               </button>
             </form>
 
-            {/* Menu items */}
             <div className="mt-4 grid gap-2">
               {menu.map((it) => renderNavItem(it, "mobile"))}
             </div>

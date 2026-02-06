@@ -25,6 +25,9 @@ import AdminChatPage from "../pages/admin/chat/AdminChatPage";
 import CartPage from "../pages/client/cart/CartPage";
 import CheckoutPage from "../pages/client/checkout/CheckoutPage";
 import OrderSuccessPage from "../pages/client/checkout/OrderSuccessPage";
+import BusinessFormsPage from "../pages/admin/agent-requests/BusinessFormsPage";
+import AgentRequestsPage from "../pages/admin/agent-requests/AgentRequestsPage";
+import AgentRequestPage from "../pages/client/agent/AgentRequestPage";
 
 export const router = createBrowserRouter([
   {
@@ -41,6 +44,7 @@ export const router = createBrowserRouter([
       { path: "cart", element: <CartPage /> },
       { path: "checkout", element: <CheckoutPage /> },
       { path: "order/success", element: <OrderSuccessPage /> },
+      { path: "agent-request", element: <AgentRequestPage /> },
       // { path: "*", element: <NotFoundPage /> },
     ],
   },
@@ -91,6 +95,11 @@ export const router = createBrowserRouter([
       { path: "settings", element: <AdminSettingsPage /> },
       { path: "banners", element: <AdminBannersPage /> },
       { path: "chat", element: <AdminChatPage /> },
+      { path: "agent-requests", element: <AgentRequestsPage /> },
+      {
+        path: "agent-requests/business-forms",
+        element: <BusinessFormsPage />,
+      },
     ],
   },
 ]);

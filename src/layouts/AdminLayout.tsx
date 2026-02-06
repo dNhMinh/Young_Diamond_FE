@@ -34,6 +34,13 @@ function AdminLayoutContent() {
           <MenuItem to="/admin/orders" label="Orders" />
           <MenuItem to="/admin/reviews" label="Reviews" />
           <MenuItem to="/admin/banners" label="Banners" />
+
+          <MenuItem to="/admin/agent-requests" label="Agent Requests" />
+          <MenuItem
+            to="/admin/agent-requests/business-forms"
+            label="Business Forms"
+          />
+          <div className="my-2 h-px bg-white/10" />
           <MenuItem to="/admin/settings" label="Settings" />
           <MenuItem to="/admin/chat" label="Chat" badge={unreadCount} />
         </nav>

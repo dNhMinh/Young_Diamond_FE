@@ -806,7 +806,6 @@ export default function CheckoutPage() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     className="h-11 px-3 rounded-lg border border-black/15 outline-none focus:border-black"
-                    placeholder="Nguyễn Văn A"
                   />
                 </label>
 
@@ -816,7 +815,6 @@ export default function CheckoutPage() {
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     className="h-11 px-3 rounded-lg border border-black/15 outline-none focus:border-black"
-                    placeholder="09xxxxxxxx"
                   />
                 </label>
 
@@ -826,7 +824,6 @@ export default function CheckoutPage() {
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     className="h-11 px-3 rounded-lg border border-black/15 outline-none focus:border-black"
-                    placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"
                   />
                 </label>
 
@@ -836,7 +833,6 @@ export default function CheckoutPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="h-11 px-3 rounded-lg border border-black/15 outline-none focus:border-black"
-                    placeholder="you@example.com"
                   />
                 </label>
 
@@ -848,7 +844,6 @@ export default function CheckoutPage() {
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     className="min-h-24 p-3 rounded-lg border border-black/15 outline-none focus:border-black"
-                    placeholder="Giao giờ hành chính, gọi trước khi giao..."
                   />
                 </label>
               </div>
