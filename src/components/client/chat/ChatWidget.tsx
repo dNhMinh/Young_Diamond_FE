@@ -103,7 +103,7 @@ export default function ChatWidget() {
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-xs text-gray-500 hover:text-gray-900"
+              className="text-lg text-gray-500 hover:text-gray-900"
               aria-label="Đóng chat"
             >
               ✕
@@ -174,13 +174,15 @@ export default function ChatWidget() {
         </div>
       )}
 
-      <button
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl hover:bg-blue-700"
-        aria-label="Mở chat"
-      >
-        💬
-      </button>
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl hover:bg-blue-700"
+          aria-label="Mở chat"
+        >
+          💬
+        </button>
+      )}
     </div>
   );
 }

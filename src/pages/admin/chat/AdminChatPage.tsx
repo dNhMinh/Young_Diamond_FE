@@ -30,7 +30,7 @@ export default function AdminChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loadingRooms, setLoadingRooms] = useState(true);
-  const { decreaseUnreadCount } = useChatNotification();
+  const { markRoomRead, setChatPageActive } = useChatNotification();
 
   const selectedRoom = useMemo(
     () => rooms.find((room) => room._id === selectedRoomId) ?? null,
@@ -41,6 +41,11 @@ export default function AdminChatPage() {
     selectedRoomIdRef.current = selectedRoomId;
     previousMessagesLengthRef.current = 0;
   }, [selectedRoomId]);
+
+  useEffect(() => {
+    setChatPageActive(true);
+    return () => setChatPageActive(false);
+  }, [setChatPageActive]);
 
   useEffect(() => {
     if (messages.length === 0) return;
@@ -167,7 +172,7 @@ export default function AdminChatPage() {
       );
 
       if (previousUnread > 0) {
-        decreaseUnreadCount(previousUnread);
+        markRoomRead(selectedRoomId);
       }
     };
 
@@ -176,7 +181,7 @@ export default function AdminChatPage() {
     return () => {
       isMounted = false;
     };
-  }, [selectedRoomId, rooms, decreaseUnreadCount]);
+  }, [selectedRoomId, rooms, markRoomRead]);
 
   const handleSend = (event: FormEvent) => {
     event.preventDefault();
@@ -225,10 +230,10 @@ export default function AdminChatPage() {
                   : "border-white/5 bg-white/5 hover:border-white/20"
               }`}
             >
-              <div className="flex items-center justify-between text-sm text-gray-100">
-                <span>Guest {room.guestId.slice(0, 6)}</span>
+              <div className="flex items-center gap-2 text-sm text-gray-100">
+                <span>Khách {room.guestId.slice(0, 6)}</span>
                 {room.unreadByAdmin > 0 && (
-                  <span className="rounded-full bg-red-500/80 px-2 py-0.5 text-[10px] text-white">
+                  <span className="ml-auto rounded-full bg-red-500/80 px-2 py-0.5 text-[10px] text-white">
                     {room.unreadByAdmin}
                   </span>
                 )}

@@ -1,13 +1,22 @@
 import { createElement } from "react";
-import { createContext, useContext, useEffect, useState, useRef } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+} from "react";
 import type { ReactNode } from "react";
 import type { Socket } from "socket.io-client";
 import { createSocket } from "../utils/socket";
 import { getAdminRooms } from "../api/admin/chat.api";
+import type { ChatMessage } from "../types/chat";
 
 interface ChatNotificationContextType {
   unreadCount: number;
-  decreaseUnreadCount: (count: number) => void;
+  markRoomRead: (roomId: string) => void;
+  setChatPageActive: (active: boolean) => void;
 }
 
 const ChatNotificationContext =
@@ -20,6 +29,12 @@ export function ChatNotificationProvider({
 }) {
   const socketRef = useRef<Socket | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const isChatPageActiveRef = useRef(false);
+  const unreadRoomsRef = useRef<Set<string>>(new Set());
+
+  const setChatPageActive = useCallback((active: boolean) => {
+    isChatPageActiveRef.current = active;
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -32,11 +47,13 @@ export function ChatNotificationProvider({
         const res = await getAdminRooms();
         if (!isMounted) return;
 
-        const total = res.data.reduce(
-          (sum, room) => sum + (room.unreadByAdmin || 0),
-          0,
+        const unreadRoomIds = new Set(
+          res.data
+            .filter((room) => (room.unreadByAdmin || 0) > 0)
+            .map((room) => room._id),
         );
-        setUnreadCount(total);
+        unreadRoomsRef.current = unreadRoomIds;
+        setUnreadCount(unreadRoomIds.size);
       } catch {
         // Không có token hoặc lỗi API - bỏ qua
       }
@@ -60,7 +77,11 @@ export function ChatNotificationProvider({
       socket.emit("admin_join");
     });
 
-    socket.on("admin_new_message", () => {
+    socket.on("admin_new_message", (message: ChatMessage) => {
+      if (isChatPageActiveRef.current) return;
+      if (!message?.roomId) return;
+      if (unreadRoomsRef.current.has(message.roomId)) return;
+      unreadRoomsRef.current.add(message.roomId);
       setUnreadCount((prev) => prev + 1);
     });
 
@@ -71,13 +92,15 @@ export function ChatNotificationProvider({
     };
   }, []);
 
-  const decreaseUnreadCount = (count: number) => {
-    setUnreadCount((prev) => Math.max(0, prev - count));
-  };
+  const markRoomRead = useCallback((roomId: string) => {
+    if (!unreadRoomsRef.current.has(roomId)) return;
+    unreadRoomsRef.current.delete(roomId);
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+  }, []);
 
   return createElement(
     ChatNotificationContext.Provider,
-    { value: { unreadCount, decreaseUnreadCount } },
+    { value: { unreadCount, markRoomRead, setChatPageActive } },
     children,
   );
 }
@@ -85,7 +108,11 @@ export function ChatNotificationProvider({
 export function useChatNotification() {
   const context = useContext(ChatNotificationContext);
   if (!context) {
-    return { unreadCount: 0, decreaseUnreadCount: () => {} };
+    return {
+      unreadCount: 0,
+      markRoomRead: () => {},
+      setChatPageActive: () => {},
+    };
   }
   return context;
 }
