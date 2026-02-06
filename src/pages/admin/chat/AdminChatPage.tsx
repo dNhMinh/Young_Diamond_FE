@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type { Socket } from "socket.io-client";
 import { createSocket } from "../../../utils/socket";
-import { getAdminRooms, closeRoom } from "../../../api/admin/chat.api";
+import { getAdminRooms } from "../../../api/admin/chat.api";
 import { getMessages } from "../../../api/client/chat.api";
 import type { ChatMessage, ChatRoom } from "../../../types/chat";
 import { useChatNotification } from "../../../hooks/useChatNotification";
@@ -19,6 +19,11 @@ const formatDate = (iso?: string) => {
   return new Date(iso).toLocaleDateString("vi-VN");
 };
 
+const truncateText = (text: string, maxLength = 36) => {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 1)}…`;
+};
+
 export default function AdminChatPage() {
   const socketRef = useRef<Socket | null>(null);
   const selectedRoomIdRef = useRef<string | null>(null);
@@ -26,6 +31,12 @@ export default function AdminChatPage() {
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const previousMessagesLengthRef = useRef(0);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
+  const [lastMessageMap, setLastMessageMap] = useState<
+    Record<
+      string,
+      { content: string; sender: ChatMessage["sender"]; createdAt?: string }
+    >
+  >({});
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -75,11 +86,45 @@ export default function AdminChatPage() {
   useEffect(() => {
     let isMounted = true;
 
+    const loadLastMessages = async (nextRooms: ChatRoom[]) => {
+      try {
+        const entries = await Promise.all(
+          nextRooms.map(async (room) => {
+            const res = await getMessages(room._id);
+            const lastMessage = res.data[res.data.length - 1];
+            if (!lastMessage) return null;
+            return [
+              room._id,
+              {
+                content: lastMessage.content,
+                sender: lastMessage.sender,
+                createdAt: lastMessage.createdAt,
+              },
+            ] as const;
+          }),
+        );
+
+        if (!isMounted) return;
+        const nextMap: Record<
+          string,
+          { content: string; sender: ChatMessage["sender"]; createdAt?: string }
+        > = {};
+        entries.forEach((entry) => {
+          if (!entry) return;
+          nextMap[entry[0]] = entry[1];
+        });
+        setLastMessageMap(nextMap);
+      } catch {
+        // ignore
+      }
+    };
+
     const loadRooms = async () => {
       try {
         const res = await getAdminRooms();
         if (!isMounted) return;
         setRooms(res.data);
+        loadLastMessages(res.data);
         if (res.data.length > 0) {
           setSelectedRoomId((prev) => prev ?? res.data[0]._id);
         }
@@ -107,9 +152,23 @@ export default function AdminChatPage() {
     });
 
     socket.on("admin_new_message", (message: ChatMessage) => {
+      setLastMessageMap((prev) => ({
+        ...prev,
+        [message.roomId]: {
+          content: message.content,
+          sender: message.sender,
+          createdAt: message.createdAt,
+        },
+      }));
+
       setRooms((prev) => {
         const idx = prev.findIndex((room) => room._id === message.roomId);
-        if (idx === -1) return prev;
+        if (idx === -1) {
+          getAdminRooms()
+            .then((res) => setRooms(res.data))
+            .catch(() => {});
+          return prev;
+        }
 
         const room = prev[idx];
         const isActiveRoom = message.roomId === selectedRoomIdRef.current;
@@ -131,6 +190,14 @@ export default function AdminChatPage() {
         return;
       }
       setMessages((prev) => [...prev, message]);
+      setLastMessageMap((prev) => ({
+        ...prev,
+        [message.roomId]: {
+          content: message.content,
+          sender: message.sender,
+          createdAt: message.createdAt,
+        },
+      }));
       setRooms((prev) =>
         prev.map((room) =>
           room._id === selectedRoomIdRef.current
@@ -155,6 +222,7 @@ export default function AdminChatPage() {
   useEffect(() => {
     if (!selectedRoomId) return;
     socketRef.current?.emit("join_room", selectedRoomId);
+    socketRef.current?.emit("admin_read_room", selectedRoomId);
 
     let isMounted = true;
 
@@ -162,17 +230,28 @@ export default function AdminChatPage() {
       const currentRoom = rooms.find((room) => room._id === selectedRoomId);
       const previousUnread = currentRoom?.unreadByAdmin || 0;
 
+      if (previousUnread > 0) {
+        markRoomRead(selectedRoomId);
+        setRooms((prev) =>
+          prev.map((room) =>
+            room._id === selectedRoomId ? { ...room, unreadByAdmin: 0 } : room,
+          ),
+        );
+      }
+
       const res = await getMessages(selectedRoomId);
       if (!isMounted) return;
       setMessages(res.data);
-      setRooms((prev) =>
-        prev.map((room) =>
-          room._id === selectedRoomId ? { ...room, unreadByAdmin: 0 } : room,
-        ),
-      );
-
-      if (previousUnread > 0) {
-        markRoomRead(selectedRoomId);
+      const lastMessage = res.data[res.data.length - 1];
+      if (lastMessage) {
+        setLastMessageMap((prev) => ({
+          ...prev,
+          [selectedRoomId]: {
+            content: lastMessage.content,
+            sender: lastMessage.sender,
+            createdAt: lastMessage.createdAt,
+          },
+        }));
       }
     };
 
@@ -194,14 +273,6 @@ export default function AdminChatPage() {
     });
 
     setInput("");
-  };
-
-  const handleCloseRoom = async () => {
-    if (!selectedRoomId) return;
-    const res = await closeRoom(selectedRoomId);
-    setRooms((prev) =>
-      prev.map((room) => (room._id === res.data._id ? res.data : room)),
-    );
   };
 
   return (
@@ -230,20 +301,33 @@ export default function AdminChatPage() {
                   : "border-white/5 bg-white/5 hover:border-white/20"
               }`}
             >
-              <div className="flex items-center gap-2 text-sm text-gray-100">
-                <span>Khách {room.guestId.slice(0, 6)}</span>
-                {room.unreadByAdmin > 0 && (
-                  <span className="ml-auto rounded-full bg-red-500/80 px-2 py-0.5 text-[10px] text-white">
-                    {room.unreadByAdmin}
-                  </span>
-                )}
-              </div>
-              <div className="text-[11px] text-gray-400">
-                {room.lastMessageAt
-                  ? `Cập nhật ${formatDate(room.lastMessageAt)}`
-                  : "Chưa có tin nhắn"}
-              </div>
-              <div className="text-[11px] text-gray-500">{room.status}</div>
+              {(() => {
+                const lastMessage = lastMessageMap[room._id];
+                const preview = lastMessage
+                  ? `${lastMessage.sender === "admin" ? "Bạn" : "Khách"}: ${lastMessage.content}`
+                  : "Chưa có tin nhắn";
+                const timeText = lastMessage?.createdAt
+                  ? `${formatDate(lastMessage.createdAt)} ${formatTime(lastMessage.createdAt)}`
+                  : room.lastMessageAt
+                    ? `${formatDate(room.lastMessageAt)} ${formatTime(room.lastMessageAt)}`
+                    : "";
+                return (
+                  <>
+                    <div className="flex items-center gap-2 text-sm text-gray-100">
+                      <span>Khách {room.guestId.slice(0, 6)}</span>
+                      {room.unreadByAdmin > 0 && (
+                        <span className="ml-auto rounded-full bg-red-500/80 px-2 py-0.5 text-[10px] text-white">
+                          {room.unreadByAdmin}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-gray-400">
+                      {truncateText(preview)}
+                    </div>
+                    <div className="text-[11px] text-gray-500">{timeText}</div>
+                  </>
+                );
+              })()}
             </button>
           ))}
         </div>
@@ -259,13 +343,6 @@ export default function AdminChatPage() {
               {selectedRoom?.status ?? ""}
             </div>
           </div>
-          <button
-            onClick={handleCloseRoom}
-            disabled={!selectedRoomId}
-            className="rounded-lg border border-red-400/40 px-3 py-1.5 text-xs text-red-300 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Đóng phòng
-          </button>
         </div>
 
         <div className="mt-4 flex max-h-[480px] min-h-[420px] flex-col gap-3 overflow-y-auto rounded-lg border border-white/5 bg-[#111111] p-4">
