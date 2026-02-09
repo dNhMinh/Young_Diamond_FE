@@ -4,14 +4,16 @@ import SystemSettingsSection from "../../../components/admin/setting/SystemSetti
 import ShippingCarriersSection from "../../../components/admin/setting/ShippingCarriersSection";
 import PaymentMethodsSection from "../../../components/admin/setting/PaymentMethodsSection";
 import BankingAccountsSection from "../../../components/admin/setting/BankingAccountsSection";
+import ChangePasswordSection from "../../../components/admin/setting/ChangePasswordSection";
 
-type TabKey = "system" | "shipping" | "paymentMethods" | "banking";
+type TabKey = "system" | "shipping" | "paymentMethods" | "banking" | "password";
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: "system", label: "Cấu hình hệ thống" },
   { key: "shipping", label: "Đơn vị vận chuyển" },
   { key: "paymentMethods", label: "Phương thức thanh toán" },
   { key: "banking", label: "Tài khoản ngân hàng (BANKING)" },
+  { key: "password", label: "Đổi mật khẩu" },
 ];
 
 export default function AdminSettingsPage() {
@@ -50,6 +52,7 @@ export default function AdminSettingsPage() {
         <ShippingCarriersSection active={activeTab === "shipping"} />
         <PaymentMethodsSection active={activeTab === "paymentMethods"} />
         <BankingAccountsSection active={activeTab === "banking"} />
+        <ChangePasswordSection active={activeTab === "password"} />
       </div>
     </div>
   );
