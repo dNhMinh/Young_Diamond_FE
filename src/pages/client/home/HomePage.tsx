@@ -1,5 +1,6 @@
 //src/pages/client/home/HomePage.tsx
 import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import HomeBanners from "../../../components/client/home/HomeBanners";
 import HomeProductCarousel from "../../../components/client/home/HomeProductCarousel";
 import HomeReviews from "../../../components/client/home/HomeReviews";
@@ -31,7 +32,17 @@ export default function HomePage() {
         setLoading(true);
 
         // banners
-        const b = await homeApi.getBanners();
+        let bannerData: HomeBanner[] = [];
+        try {
+          const b = await homeApi.getBanners();
+          bannerData = b.data || [];
+        } catch (err) {
+          if (axios.isAxiosError(err) && err.response?.status === 404) {
+            bannerData = [];
+          } else {
+            throw err;
+          }
+        }
 
         // featured (ASSUMPTION: type=sales)
         const feat = await productsApi.list({
@@ -41,19 +52,29 @@ export default function HomePage() {
         });
 
         // new products (API home trả detail, nhưng ta muốn card => map)
-        const newRes = await homeApi.getNewProducts();
+        let newProductsData: ProductDetailWithMeta[] = [];
+        try {
+          const newRes = await homeApi.getNewProducts();
+          newProductsData = newRes.data || [];
+        } catch (err) {
+          if (axios.isAxiosError(err) && err.response?.status === 404) {
+            newProductsData = [];
+          } else {
+            throw err;
+          }
+        }
 
         // reviews
         const rv = await reviewsApi.list();
 
         if (!alive) return;
 
-        setBanners(b.data || []);
+        setBanners(bannerData);
 
         setFeatured(feat.data || []);
 
         // map ProductDetail -> ProductCardDTO
-        const mappedNew: ProductCardDTO[] = (newRes.data || []).map(
+        const mappedNew: ProductCardDTO[] = newProductsData.map(
           (p: ProductDetailWithMeta): ProductCardDTO => ({
             _id: p._id,
             title: p.title,

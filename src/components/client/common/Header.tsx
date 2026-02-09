@@ -1,5 +1,6 @@
 //src/components/client/common/Header.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
 import {
   Link,
   useLocation,
@@ -130,6 +131,10 @@ export default function Header() {
         if (!alive) return;
         setCategories(res.data || []);
       } catch (e) {
+        if (axios.isAxiosError(e) && e.response?.status === 404) {
+          if (alive) setCategories([]);
+          return;
+        }
         console.error("Failed to load categories", e);
       }
     })();
