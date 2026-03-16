@@ -52,23 +52,6 @@ export const updateMultiOrderPaymentStatusApi = (
   );
 };
 
-// export const updateOrderStatusApi = (orderId: string, status: OrderStatus) => {
-//   return baseApi.patch<ApiResponse<OrderDetail>>(
-//     `/admin/orders/update-status-order/${orderId}`,
-//     { status },
-//   );
-// };
-
-// export const updateMultiOrderStatusApi = (
-//   orderIds: string[],
-//   status: OrderStatus,
-// ) => {
-//   return baseApi.patch<ApiResponse<MongoUpdateManyResult>>(
-//     `/admin/orders/update-multi-status-order`,
-//     { orderIds, status },
-//   );
-// };
-
 export const updateOrderStatusApi = (
   orderId: string,
   status: OrderStatus,

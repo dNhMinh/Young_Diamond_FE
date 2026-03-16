@@ -1,3 +1,4 @@
+//src/pages/admin/chat/AdminChatPage.tsx
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type { Socket } from "socket.io-client";
 import { createSocket } from "../../../utils/socket";
@@ -299,8 +300,7 @@ export default function AdminChatPage() {
                 selectedRoomId === room._id
                   ? "border-blue-500/60 bg-blue-500/10"
                   : "border-white/5 bg-white/5 hover:border-white/20"
-              }`}
-            >
+              }`}>
               {(() => {
                 const lastMessage = lastMessageMap[room._id];
                 const preview = lastMessage
@@ -364,16 +364,14 @@ export default function AdminChatPage() {
                   guest: "justify-start",
                   admin: "justify-end",
                 }[message.sender]
-              }`}
-            >
+              }`}>
               <div
                 className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm shadow-sm ${
                   {
                     guest: "bg-white text-gray-900",
                     admin: "bg-blue-600 text-white",
                   }[message.sender]
-                }`}
-              >
+                }`}>
                 <div>{message.content}</div>
                 <div
                   className={`mt-1 text-[11px] opacity-70 ${
@@ -381,8 +379,7 @@ export default function AdminChatPage() {
                       guest: "text-gray-500",
                       admin: "text-blue-100",
                     }[message.sender]
-                  }`}
-                >
+                  }`}>
                   {formatTime(message.createdAt)}
                 </div>
               </div>
@@ -402,8 +399,7 @@ export default function AdminChatPage() {
           <button
             type="submit"
             disabled={!selectedRoomId}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
             Gửi
           </button>
         </form>

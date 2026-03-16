@@ -1,3 +1,4 @@
+//src/pages/admin/agent-requests/AgentRequestsPage.tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getAdminAgentRequestsApi,
@@ -12,6 +13,15 @@ function fmtDate(v?: string) {
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return "-";
   return d.toLocaleString();
+}
+
+function normalizeExternalUrl(v?: string) {
+  const raw = (v ?? "").trim();
+  if (!raw) return "";
+
+  if (/^https?:\/\//i.test(raw)) return raw;
+
+  return `https://${raw}`;
 }
 
 type FormIndex = Record<string, { name: string; isActive: boolean }>;
@@ -89,8 +99,7 @@ export default function AgentRequestsPage() {
 
         <button
           onClick={() => void load({ showLoading: true })}
-          className="rounded-lg border border-white/15 px-4 py-2 text-sm text-white hover:bg-white/10"
-        >
+          className="rounded-lg border border-white/15 px-4 py-2 text-sm text-white hover:bg-white/10">
           Refresh
         </button>
       </div>
@@ -121,8 +130,7 @@ export default function AgentRequestsPage() {
                   return (
                     <tr
                       key={x._id}
-                      className="border-t border-white/5 hover:bg-white/5"
-                    >
+                      className="border-t border-white/5 hover:bg-white/5">
                       <td className="px-4 py-3">
                         <div className="flex flex-col">
                           <span className="text-white font-medium">
@@ -144,8 +152,7 @@ export default function AgentRequestsPage() {
                                 form.isActive
                                   ? "text-green-300"
                                   : "text-red-300"
-                              }`}
-                            >
+                              }`}>
                               {form.isActive ? "Active" : "Inactive"}
                             </span>
                             <span className="text-xs text-white/40">
@@ -168,14 +175,26 @@ export default function AgentRequestsPage() {
                         ) : null}
                       </td>
 
-                      <td className="px-4 py-3">
+                      {/* <td className="px-4 py-3">
                         {x.linkShop ? (
                           <a
                             href={x.linkShop}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-white hover:underline"
-                          >
+                            className="text-white hover:underline">
+                            Open
+                          </a>
+                        ) : (
+                          <span className="text-white/40">-</span>
+                        )}
+                      </td> */}
+                      <td className="px-4 py-3">
+                        {x.linkShop ? (
+                          <a
+                            href={normalizeExternalUrl(x.linkShop)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-white hover:underline">
                             Open
                           </a>
                         ) : (
@@ -193,8 +212,7 @@ export default function AgentRequestsPage() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-4 py-6 text-center text-gray-400"
-                  >
+                    className="px-4 py-6 text-center text-gray-400">
                     No agent requests
                   </td>
                 </tr>

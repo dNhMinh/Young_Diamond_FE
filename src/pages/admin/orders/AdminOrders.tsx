@@ -44,6 +44,9 @@ export default function AdminOrders() {
 
   const [searchKey, setSearchKey] = useState("");
 
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
   // update payment từng dòng
   const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(
     null,
@@ -85,11 +88,36 @@ export default function AdminOrders() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, paymentStatus]);
 
+  // const filtered = useMemo(() => {
+  //   const q = searchKey.trim().toLowerCase();
+  //   if (!q) return items;
+  //   return items.filter((o) => (o.orderCode ?? "").toLowerCase().includes(q));
+  // }, [items, searchKey]);
   const filtered = useMemo(() => {
     const q = searchKey.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((o) => (o.orderCode ?? "").toLowerCase().includes(q));
-  }, [items, searchKey]);
+
+    return items.filter((o) => {
+      const matchSearch = q
+        ? (o.orderCode ?? "").toLowerCase().includes(q)
+        : true;
+
+      const createdTs = o.createdAt ? new Date(o.createdAt).getTime() : null;
+
+      const fromTs = fromDate
+        ? new Date(`${fromDate}T00:00:00`).getTime()
+        : null;
+
+      const toTs = toDate ? new Date(`${toDate}T23:59:59.999`).getTime() : null;
+
+      const matchFrom =
+        fromTs === null || (createdTs !== null && createdTs >= fromTs);
+
+      const matchTo =
+        toTs === null || (createdTs !== null && createdTs <= toTs);
+
+      return matchSearch && matchFrom && matchTo;
+    });
+  }, [items, searchKey, fromDate, toDate]);
 
   // ✅ các id đang được tick trong list hiện tại
   const selectedInFiltered = useMemo(() => {
@@ -207,43 +235,6 @@ export default function AdminOrders() {
     }
   };
 
-  //  update status từng dòng (không cho nếu delivered)
-  // const handleUpdateStatus = async (orderId: string, next: OrderStatus) => {
-  //   const current: OrderStatus =
-  //     items.find((x) => x._id === orderId)?.status ?? "pending";
-  //   if (next === current) return;
-
-  //   if (current === "delivered") {
-  //     return alert(
-  //       'Đơn hàng đã "delivered" nên không thể cập nhật trạng thái.',
-  //     );
-  //   }
-
-  //   const ok = confirm(`Cập nhật status: ${current} → ${next} ?`);
-  //   if (!ok) return;
-
-  //   setUpdatingStatusId(orderId);
-
-  //   // optimistic
-  //   setItems((prev) =>
-  //     prev.map((o) => (o._id === orderId ? { ...o, status: next } : o)),
-  //   );
-
-  //   try {
-  //     const res = await updateOrderStatusApi(orderId, next);
-  //     alert(res.data.message || "Updated order status");
-  //     await fetchOrders();
-  //   } catch (e) {
-  //     console.error(e);
-  //     alert("Update order status failed");
-  //     // revert
-  //     setItems((prev) =>
-  //       prev.map((o) => (o._id === orderId ? { ...o, status: current } : o)),
-  //     );
-  //   } finally {
-  //     setUpdatingStatusId(null);
-  //   }
-  // };
   const handleUpdateStatus = async (orderId: string, next: OrderStatus) => {
     const currentRow = items.find((x) => x._id === orderId);
     const current: OrderStatus = currentRow?.status ?? "pending";
@@ -314,68 +305,6 @@ export default function AdminOrders() {
       setUpdatingStatusId(null);
     }
   };
-
-  //  bulk update status (fail nếu có 1 đơn delivered)
-  // const handleBulkUpdateStatus = async () => {
-  //   if (selectedInFiltered.length === 0) return alert("Bạn chưa chọn đơn nào.");
-
-  //   const selectedRows = items.filter((o) =>
-  //     selectedInFiltered.includes(o._id),
-  //   );
-  //   const hasDelivered = selectedRows.some((o) => o.status === "delivered");
-  //   if (hasDelivered) {
-  //     return alert(
-  //       'Trong selection có đơn "delivered" nên không thể bulk update (API sẽ fail).',
-  //     );
-  //   }
-
-  //   const ok = confirm(
-  //     `Cập nhật status = "${bulkOrderStatus}" cho ${selectedInFiltered.length} đơn hàng?`,
-  //   );
-  //   if (!ok) return;
-
-  //   setBulkStatusUpdating(true);
-
-  //   const prevMap = new Map<string, OrderStatus>();
-  //   items.forEach((o) => {
-  //     if (selectedInFiltered.includes(o._id)) prevMap.set(o._id, o.status);
-  //   });
-
-  //   // optimistic
-  //   setItems((prev) =>
-  //     prev.map((o) =>
-  //       selectedInFiltered.includes(o._id)
-  //         ? { ...o, status: bulkOrderStatus }
-  //         : o,
-  //     ),
-  //   );
-
-  //   try {
-  //     const res = await updateMultiOrderStatusApi(
-  //       selectedInFiltered,
-  //       bulkOrderStatus,
-  //     );
-  //     const r = res.data.data;
-  //     alert(
-  //       `${res.data.message || "Bulk updated"} (modified: ${r?.modifiedCount ?? 0})`,
-  //     );
-  //     clearSelected();
-  //     await fetchOrders();
-  //   } catch (e) {
-  //     console.error(e);
-  //     alert("Bulk update status failed");
-
-  //     // revert
-  //     setItems((prev) =>
-  //       prev.map((o) => {
-  //         const old = prevMap.get(o._id);
-  //         return old ? { ...o, status: old } : o;
-  //       }),
-  //     );
-  //   } finally {
-  //     setBulkStatusUpdating(false);
-  //   }
-  // };
 
   const handleBulkUpdateStatus = async () => {
     if (selectedInFiltered.length === 0) return alert("Bạn chưa chọn đơn nào.");
@@ -491,8 +420,7 @@ export default function AdminOrders() {
           value={status}
           onChange={(e) => setStatus(e.target.value as StatusFilter)}
           className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm text-white"
-          style={{ colorScheme: "dark" }}
-        >
+          style={{ colorScheme: "dark" }}>
           <option value="all" className={DROPDOWN_OPTION_CLASS}>
             All
           </option>
@@ -522,8 +450,7 @@ export default function AdminOrders() {
             setPaymentStatus(e.target.value as PaymentStatusFilter)
           }
           className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm text-white"
-          style={{ colorScheme: "dark" }}
-        >
+          style={{ colorScheme: "dark" }}>
           <option value="all" className={DROPDOWN_OPTION_CLASS}>
             All payment
           </option>
@@ -537,6 +464,32 @@ export default function AdminOrders() {
             failed
           </option>
         </select>
+
+        <input
+          type="date"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+          className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm text-white"
+          title="Từ ngày"
+        />
+
+        <input
+          type="date"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+          className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm text-white"
+          title="Đến ngày"
+        />
+
+        <button
+          type="button"
+          onClick={() => {
+            setFromDate("");
+            setToDate("");
+          }}
+          className="rounded-lg border border-white/10 px-3 py-2 text-sm text-white hover:bg-white/10">
+          Clear date
+        </button>
       </div>
 
       {/* Bulk actions */}
@@ -550,16 +503,14 @@ export default function AdminOrders() {
           <button
             onClick={toggleSelectAllFiltered}
             className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white hover:bg-white/10 disabled:opacity-60"
-            disabled={filtered.length === 0 || anyBulkUpdating}
-          >
+            disabled={filtered.length === 0 || anyBulkUpdating}>
             {allFilteredSelected ? "Unselect All" : "Select All"}
           </button>
 
           <button
             onClick={clearSelected}
             className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white hover:bg-white/10 disabled:opacity-60"
-            disabled={selectedCount === 0 || anyBulkUpdating}
-          >
+            disabled={selectedCount === 0 || anyBulkUpdating}>
             Clear
           </button>
 
@@ -571,8 +522,7 @@ export default function AdminOrders() {
             }
             className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-xs text-white disabled:opacity-60"
             disabled={anyBulkUpdating}
-            style={{ colorScheme: "dark" }}
-          >
+            style={{ colorScheme: "dark" }}>
             <option value="pending" className={DROPDOWN_OPTION_CLASS}>
               pending
             </option>
@@ -587,8 +537,7 @@ export default function AdminOrders() {
           <button
             onClick={handleBulkUpdatePayment}
             className="rounded-lg bg-white px-3 py-2 text-xs font-medium text-black hover:bg-gray-200 disabled:opacity-60"
-            disabled={selectedCount === 0 || anyBulkUpdating}
-          >
+            disabled={selectedCount === 0 || anyBulkUpdating}>
             {bulkPaymentUpdating ? "Applying..." : "Apply Payment"}
           </button>
 
@@ -600,8 +549,7 @@ export default function AdminOrders() {
             onChange={(e) => setBulkOrderStatus(e.target.value as OrderStatus)}
             className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-xs text-white disabled:opacity-60"
             disabled={anyBulkUpdating}
-            style={{ colorScheme: "dark" }}
-          >
+            style={{ colorScheme: "dark" }}>
             <option value="pending" className={DROPDOWN_OPTION_CLASS}>
               pending
             </option>
@@ -625,8 +573,7 @@ export default function AdminOrders() {
           <button
             onClick={handleBulkUpdateStatus}
             className="rounded-lg bg-white px-3 py-2 text-xs font-medium text-black hover:bg-gray-200 disabled:opacity-60"
-            disabled={selectedCount === 0 || anyBulkUpdating}
-          >
+            disabled={selectedCount === 0 || anyBulkUpdating}>
             {bulkStatusUpdating ? "Applying..." : "Apply Status"}
           </button>
         </div>
@@ -676,8 +623,7 @@ export default function AdminOrders() {
                 return (
                   <tr
                     key={o._id}
-                    className="border-t border-white/5 hover:bg-white/5"
-                  >
+                    className="border-t border-white/5 hover:bg-white/5">
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
@@ -690,8 +636,7 @@ export default function AdminOrders() {
                     <td className="px-4 py-3">
                       <Link
                         to={`/admin/orders/${o._id}`}
-                        className="font-medium text-white hover:underline"
-                      >
+                        className="font-medium text-white hover:underline">
                         {o.orderCode}
                       </Link>
                       {o.status === "failed" && o.failReason ? (
@@ -727,42 +672,35 @@ export default function AdminOrders() {
                               ? "Delivered không thể cập nhật"
                               : ""
                           }
-                          style={{ colorScheme: "dark" }}
-                        >
+                          style={{ colorScheme: "dark" }}>
                           <option
                             value="pending"
-                            className={DROPDOWN_OPTION_CLASS}
-                          >
+                            className={DROPDOWN_OPTION_CLASS}>
                             pending
                           </option>
                           <option
                             value="confirmed"
-                            className={DROPDOWN_OPTION_CLASS}
-                          >
+                            className={DROPDOWN_OPTION_CLASS}>
                             confirmed
                           </option>
                           <option
                             value="shipped"
-                            className={DROPDOWN_OPTION_CLASS}
-                          >
+                            className={DROPDOWN_OPTION_CLASS}>
                             shipped
                           </option>
                           <option
                             value="delayed"
-                            className={DROPDOWN_OPTION_CLASS}
-                          >
+                            className={DROPDOWN_OPTION_CLASS}>
                             delayed
                           </option>
                           <option
                             value="delivered"
-                            className={DROPDOWN_OPTION_CLASS}
-                          >
+                            className={DROPDOWN_OPTION_CLASS}>
                             delivered
                           </option>
                           <option
                             value="failed"
-                            className={DROPDOWN_OPTION_CLASS}
-                          >
+                            className={DROPDOWN_OPTION_CLASS}>
                             failed
                           </option>
                         </select>
@@ -788,24 +726,20 @@ export default function AdminOrders() {
                             )
                           }
                           className={`min-w-[110px] rounded-full border border-white/10 px-3 py-1 pr-7 text-xs outline-none ${PAYMENT_STATUS_STYLE[pay]} disabled:opacity-60`}
-                          style={{ colorScheme: "dark" }}
-                        >
+                          style={{ colorScheme: "dark" }}>
                           <option
                             value="pending"
-                            className={DROPDOWN_OPTION_CLASS}
-                          >
+                            className={DROPDOWN_OPTION_CLASS}>
                             pending
                           </option>
                           <option
                             value="paid"
-                            className={DROPDOWN_OPTION_CLASS}
-                          >
+                            className={DROPDOWN_OPTION_CLASS}>
                             paid
                           </option>
                           <option
                             value="failed"
-                            className={DROPDOWN_OPTION_CLASS}
-                          >
+                            className={DROPDOWN_OPTION_CLASS}>
                             failed
                           </option>
                         </select>
@@ -827,8 +761,7 @@ export default function AdminOrders() {
                     <td className="px-4 py-3 text-right">
                       <Link
                         to={`/admin/orders/${o._id}`}
-                        className="text-blue-400 hover:underline"
-                      >
+                        className="text-blue-400 hover:underline">
                         View
                       </Link>
                     </td>
