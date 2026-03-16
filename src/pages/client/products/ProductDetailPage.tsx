@@ -407,8 +407,7 @@ function AccordionRow({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full py-4 flex items-center justify-between text-left"
-      >
+        className="w-full py-4 flex items-center justify-between text-left">
         <span className="text-sm tracking-wide text-black">{title}</span>
         <span className="text-lg leading-none text-black/70">
           {open ? "–" : "+"}
@@ -629,12 +628,6 @@ export default function ProductDetailPage() {
             {/* SIZE */}
             <div className="mt-10 flex items-center justify-between">
               <div className="text-sm tracking-wide text-black">size:</div>
-              <button
-                type="button"
-                className="text-sm underline text-neutral-500 hover:text-black"
-              >
-                size &amp; fit
-              </button>
             </div>
 
             <div className="mt-4 flex items-center gap-3 flex-wrap">
@@ -654,8 +647,7 @@ export default function ProductDetailPage() {
                         ? "border-black bg-black text-white shadow-sm"
                         : "border-black/20 bg-white text-black/70 hover:border-black hover:text-black hover:shadow-sm hover:-translate-y-[1px]",
                     ].join(" ")}
-                    title={s.freeSize ? "Free size" : s.type}
-                  >
+                    title={s.freeSize ? "Free size" : s.type}>
                     {s.freeSize ? "FREE" : s.size}
                   </button>
                 );
@@ -684,8 +676,7 @@ export default function ProductDetailPage() {
                           active
                             ? "border-black bg-black text-white shadow-sm"
                             : "border-black/20 bg-white text-black/70 hover:border-black hover:text-black hover:shadow-sm hover:-translate-y-[1px]",
-                        ].join(" ")}
-                      >
+                        ].join(" ")}>
                         {c}
                       </button>
                     );
@@ -706,8 +697,7 @@ export default function ProductDetailPage() {
                 inStock
                   ? "bg-black text-white cursor-pointer hover:shadow-lg hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.99]"
                   : "bg-black/30 text-white/70 cursor-not-allowed",
-              ].join(" ")}
-            >
+              ].join(" ")}>
               <span className="text-sm font-semibold">
                 {inStock ? "ADD TO BAG" : "OUT OF STOCK"}
               </span>
@@ -721,16 +711,16 @@ export default function ProductDetailPage() {
                     ? "border-white/15 bg-white/5 transition-all duration-200 group-hover:bg-white/10"
                     : "border-white/10 bg-white/5",
                 ].join(" ")}
-                aria-hidden
-              >
+                aria-hidden>
                 <svg
                   width="18"
                   height="18"
                   viewBox="0 0 24 24"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
-                  className={inStock ? "transition-transform duration-200" : ""}
-                >
+                  className={
+                    inStock ? "transition-transform duration-200" : ""
+                  }>
                   <path
                     d="M7 9V7a5 5 0 0 1 10 0v2"
                     stroke="currentColor"

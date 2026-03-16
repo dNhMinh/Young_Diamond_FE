@@ -25,13 +25,86 @@ const truncateText = (text: string, maxLength = 36) => {
   return `${text.slice(0, maxLength - 1)}…`;
 };
 
+const playNewMessageSound = () => {
+  try {
+    const AudioContextClass =
+      window.AudioContext ||
+      (
+        window as typeof window & {
+          webkitAudioContext?: typeof AudioContext;
+        }
+      ).webkitAudioContext;
+
+    if (!AudioContextClass) return;
+
+    const audioCtx = new AudioContextClass();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.type = "square";
+    oscillator.frequency.setValueAtTime(1040, audioCtx.currentTime);
+    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime + 0.08);
+    oscillator.frequency.setValueAtTime(1040, audioCtx.currentTime + 0.16);
+
+    gainNode.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.5,
+      audioCtx.currentTime + 0.01,
+    );
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.0001,
+      audioCtx.currentTime + 0.3,
+    );
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.start(audioCtx.currentTime);
+    oscillator.stop(audioCtx.currentTime + 0.32);
+
+    oscillator.onended = () => {
+      void audioCtx.close().catch(() => {});
+    };
+  } catch {
+    // ignore audio errors
+  }
+};
+
+const QUICK_EMOJIS = [
+  "😀",
+  "😂",
+  "😊",
+  "😍",
+  "🥰",
+  "😎",
+  "🤔",
+  "😭",
+  "😡",
+  "👍",
+  "👎",
+  "🙏",
+  "👏",
+  "🎉",
+  "🔥",
+  "❤️",
+  "💯",
+  "✨",
+];
+
 export default function AdminChatPage() {
   const socketRef = useRef<Socket | null>(null);
   const selectedRoomIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const previousMessagesLengthRef = useRef(0);
+  const hasSocketInitializedRef = useRef(false);
+  const isSwitchingRoomRef = useRef(false);
+  const adminJustSentRef = useRef(false);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+
   const [lastMessageMap, setLastMessageMap] = useState<
     Record<
       string,
@@ -52,6 +125,8 @@ export default function AdminChatPage() {
   useEffect(() => {
     selectedRoomIdRef.current = selectedRoomId;
     previousMessagesLengthRef.current = 0;
+    isSwitchingRoomRef.current = true;
+    adminJustSentRef.current = false;
   }, [selectedRoomId]);
 
   useEffect(() => {
@@ -60,18 +135,42 @@ export default function AdminChatPage() {
   }, [setChatPageActive]);
 
   useEffect(() => {
-    if (messages.length === 0) return;
-
     const container = messagesContainerRef.current;
-    const isInitialLoad = previousMessagesLengthRef.current === 0;
+    if (!container) {
+      previousMessagesLengthRef.current = messages.length;
+      isSwitchingRoomRef.current = false;
+      return;
+    }
 
-    if (isInitialLoad) {
+    const previousLength = previousMessagesLengthRef.current;
+    const isInitialLoad = previousLength === 0;
+    const hasNewMessage = messages.length > previousLength;
+
+    // Khi vừa chuyển room: cuộn xuống tin nhắn mới nhất
+    if (isSwitchingRoomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+      previousMessagesLengthRef.current = messages.length;
+      isSwitchingRoomRef.current = false;
+      return;
+    }
+
+    // Lần load đầu tiên của room đầu tiên cũng cuộn xuống cuối
+    if (isInitialLoad && messages.length > 0) {
       messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
       previousMessagesLengthRef.current = messages.length;
       return;
     }
 
-    if (container) {
+    // Nếu admin vừa gửi tin nhắn thì luôn cuộn xuống cuối
+    if (adminJustSentRef.current && hasNewMessage) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      adminJustSentRef.current = false;
+      previousMessagesLengthRef.current = messages.length;
+      return;
+    }
+
+    // Nếu là tin nhắn mới từ phía khác thì chỉ auto scroll khi đang gần cuối
+    if (!isInitialLoad && hasNewMessage) {
       const isAtBottom =
         container.scrollHeight - container.scrollTop - container.clientHeight <
         50;
@@ -153,6 +252,11 @@ export default function AdminChatPage() {
     });
 
     socket.on("admin_new_message", (message: ChatMessage) => {
+      if (hasSocketInitializedRef.current && message.sender === "guest") {
+        playNewMessageSound();
+      }
+      hasSocketInitializedRef.current = true;
+
       setLastMessageMap((prev) => ({
         ...prev,
         [message.roomId]: {
@@ -182,7 +286,6 @@ export default function AdminChatPage() {
         return [nextRoom, ...prev.filter((_, i) => i !== idx)];
       });
     });
-
     socket.on("new_message", (message: ChatMessage) => {
       if (
         !selectedRoomIdRef.current ||
@@ -268,17 +371,41 @@ export default function AdminChatPage() {
     const content = input.trim();
     if (!content || !selectedRoomId) return;
 
+    adminJustSentRef.current = true;
     socketRef.current?.emit("admin_send_message", {
       roomId: selectedRoomId,
       content,
     });
 
     setInput("");
+    setShowPicker(false);
   };
+
+  const handleInsertQuickItem = (value: string) => {
+    setInput((prev) => `${prev}${value}`);
+    inputRef.current?.focus();
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (!pickerRef.current?.contains(target)) {
+        setShowPicker(false);
+      }
+    };
+
+    if (showPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showPicker]);
 
   return (
     <div className="flex min-h-[640px] gap-6">
-      <aside className="w-72 shrink-0 rounded-xl border border-white/10 bg-[#111111] p-4">
+      <aside className="flex h-[640px] w-72 shrink-0 flex-col rounded-xl border border-white/10 bg-[#111111] p-4">
         <div className="mb-3 text-sm font-semibold text-gray-200">
           Phòng chat
         </div>
@@ -291,15 +418,19 @@ export default function AdminChatPage() {
           <div className="text-xs text-gray-400">Chưa có phòng chat.</div>
         )}
 
-        <div className="mt-2 space-y-2">
+        <div className="mt-2 flex-1 space-y-2 overflow-y-auto pr-1">
           {rooms.map((room) => (
             <button
               key={room._id}
               onClick={() => setSelectedRoomId(room._id)}
               className={`flex w-full flex-col gap-1 rounded-lg border px-3 py-2 text-left text-xs transition ${
                 selectedRoomId === room._id
-                  ? "border-blue-500/60 bg-blue-500/10"
-                  : "border-white/5 bg-white/5 hover:border-white/20"
+                  ? room.unreadByAdmin > 0
+                    ? "border-red-500 bg-red-500/10 shadow-[0_0_0_1px_rgba(239,68,68,0.35)]"
+                    : "border-blue-500/60 bg-blue-500/10"
+                  : room.unreadByAdmin > 0
+                    ? "border-red-500/80 bg-red-500/5 hover:border-red-400"
+                    : "border-white/5 bg-white/5 hover:border-white/20"
               }`}>
               {(() => {
                 const lastMessage = lastMessageMap[room._id];
@@ -316,7 +447,10 @@ export default function AdminChatPage() {
                     <div className="flex items-center gap-2 text-sm text-gray-100">
                       <span>Khách {room.guestId.slice(0, 6)}</span>
                       {room.unreadByAdmin > 0 && (
-                        <span className="ml-auto rounded-full bg-red-500/80 px-2 py-0.5 text-[10px] text-white">
+                        // <span className="ml-auto rounded-full bg-red-500/80 px-2 py-0.5 text-[10px] text-white">
+                        //   {room.unreadByAdmin}
+                        // </span>
+                        <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
                           {room.unreadByAdmin}
                         </span>
                       )}
@@ -345,7 +479,9 @@ export default function AdminChatPage() {
           </div>
         </div>
 
-        <div className="mt-4 flex max-h-[480px] min-h-[420px] flex-col gap-3 overflow-y-auto rounded-lg border border-white/5 bg-[#111111] p-4">
+        <div
+          ref={messagesContainerRef}
+          className="mt-4 flex max-h-[480px] min-h-[420px] flex-col gap-3 overflow-y-auto rounded-lg border border-white/5 bg-[#111111] p-4">
           {!selectedRoomId && (
             <div className="text-xs text-gray-400">
               Chọn phòng để xem tin nhắn.
@@ -389,13 +525,48 @@ export default function AdminChatPage() {
         </div>
 
         <form onSubmit={handleSend} className="mt-4 flex items-center gap-3">
-          <input
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            disabled={!selectedRoomId}
-            placeholder="Nhập tin nhắn…"
-            className="flex-1 rounded-lg border border-white/10 bg-[#0b0b0b] px-4 py-2 text-sm text-white placeholder:text-gray-500 focus:border-blue-500 focus:outline-none"
-          />
+          <div className="relative flex flex-1 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowPicker((prev) => !prev)}
+              disabled={!selectedRoomId}
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-[#0b0b0b] text-lg text-white transition hover:border-white/20 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Emoji">
+              🙂
+            </button>
+
+            {showPicker && selectedRoomId ? (
+              <div
+                ref={pickerRef}
+                className="absolute bottom-12 left-0 z-20 w-[300px] rounded-xl border border-white/10 bg-[#111111] p-3 shadow-xl">
+                <div className="mb-3 text-xs font-medium text-gray-300">
+                  Emoji
+                </div>
+
+                <div className="grid grid-cols-6 gap-2">
+                  {QUICK_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => handleInsertQuickItem(emoji)}
+                      className="flex h-10 w-10 items-center justify-center rounded-lg text-xl transition hover:bg-white/10">
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              disabled={!selectedRoomId}
+              placeholder="Nhập tin nhắn…"
+              className="flex-1 rounded-lg border border-white/10 bg-[#0b0b0b] px-4 py-2 text-sm text-white placeholder:text-gray-500 focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+
           <button
             type="submit"
             disabled={!selectedRoomId}
