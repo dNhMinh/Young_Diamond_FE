@@ -76,8 +76,7 @@ function CartIcon({ className }: { className?: string }) {
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+      xmlns="http://www.w3.org/2000/svg">
       <path
         d="M6.5 7h14l-1.2 7.2a2 2 0 0 1-2 1.8H9.1a2 2 0 0 1-2-1.6L5.7 4.8A1.8 1.8 0 0 0 4 3.5H2.8"
         stroke="currentColor"
@@ -246,16 +245,14 @@ export default function Header() {
         key="shop"
         className="relative inline-flex items-center"
         onMouseEnter={() => setShopHoverOpen(true)}
-        onMouseLeave={() => setShopHoverOpen(false)}
-      >
+        onMouseLeave={() => setShopHoverOpen(false)}>
         <Link
           to={to}
           className={`${linkClass} inline-flex items-center gap-2 leading-none`}
           aria-haspopup="menu"
           aria-expanded={shopHoverOpen}
           onFocus={() => setShopHoverOpen(true)}
-          onBlur={() => setShopHoverOpen(false)}
-        >
+          onBlur={() => setShopHoverOpen(false)}>
           <span>SHOP</span>
           <span className={active ? "text-white" : "text-neutral-400"}>▾</span>
         </Link>
@@ -265,8 +262,7 @@ export default function Header() {
             <div className="absolute left-0 right-0 top-full h-3" aria-hidden />
             <div
               className="absolute left-1/2 -translate-x-1/2 top-full pt-3 z-50"
-              role="menu"
-            >
+              role="menu">
               <div className="min-w-[240px] bg-black/95 backdrop-blur border border-white/10 shadow-xl overflow-hidden">
                 <div className="py-2">
                   {categories.length === 0 ? (
@@ -287,8 +283,7 @@ export default function Header() {
                           to={catTo}
                           onClick={() => setShopHoverOpen(false)}
                           className="block px-4 py-2 text-sm text-neutral-200 hover:bg-white/5 hover:text-white transition"
-                          role="menuitem"
-                        >
+                          role="menuitem">
                           {getCategoryLabel(c)}
                         </Link>
                       );
@@ -321,8 +316,7 @@ export default function Header() {
           <span
             key={it.key}
             className="text-xs tracking-[0.2em] uppercase pb-1 text-neutral-600 border-b border-transparent cursor-not-allowed"
-            title="Đang tải danh mục..."
-          >
+            title="Đang tải danh mục...">
             {it.label}
           </span>
         );
@@ -332,8 +326,7 @@ export default function Header() {
         <Link
           key={it.key}
           to={to || "/"}
-          className={`text-xs tracking-[0.2em] uppercase pb-1 ${cnActive(active)}`}
-        >
+          className={`text-xs tracking-[0.2em] uppercase pb-1 ${cnActive(active)}`}>
           {it.label}
         </Link>
       );
@@ -344,8 +337,7 @@ export default function Header() {
         <span
           key={it.key}
           className="px-3 py-2 rounded-md border border-white/10 text-sm tracking-wide bg-black text-neutral-600 cursor-not-allowed"
-          title="Đang tải danh mục..."
-        >
+          title="Đang tải danh mục...">
           {it.label}
         </span>
       );
@@ -361,8 +353,7 @@ export default function Header() {
           active
             ? "bg-white text-black border-white"
             : "bg-black text-neutral-200 border-white/10 hover:bg-white/5 hover:border-white/20",
-        ].join(" ")}
-      >
+        ].join(" ")}>
         {it.label}
       </Link>
     );
@@ -383,8 +374,7 @@ export default function Header() {
           <div className="flex items-center gap-2 shrink-0">
             <form
               onSubmit={submitSearch}
-              className="hidden md:flex items-center"
-            >
+              className="hidden md:flex items-center">
               <div className="flex items-center border border-white/15 rounded-full px-3 h-9 bg-black/40">
                 <span className="text-neutral-300 text-sm mr-2">⌕</span>
                 <input
@@ -405,8 +395,7 @@ export default function Header() {
                 "active:scale-[0.98]",
               ].join(" ")}
               aria-label="Cart"
-              title="Giỏ hàng"
-            >
+              title="Giỏ hàng">
               <span className="text-white">
                 <CartIcon />
               </span>
@@ -423,8 +412,7 @@ export default function Header() {
                     border border-black/20
                     select-none
                   "
-                  aria-label={`Cart items: ${cartCount}`}
-                >
+                  aria-label={`Cart items: ${cartCount}`}>
                   {cartCount > 99 ? "99+" : cartCount}
                 </span>
               ) : null}
@@ -434,8 +422,7 @@ export default function Header() {
               className="lg:hidden h-9 w-9 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/5"
               type="button"
               onClick={() => setOpen((v) => !v)}
-              aria-label="Menu"
-            >
+              aria-label="Menu">
               <span className="text-white">{open ? "✕" : "≡"}</span>
             </button>
           </div>
@@ -457,8 +444,7 @@ export default function Header() {
               </div>
               <button
                 type="submit"
-                className="h-10 px-4 rounded-full bg-white text-black text-sm hover:opacity-90"
-              >
+                className="h-10 px-4 rounded-full bg-white text-black text-sm hover:opacity-90">
                 Search
               </button>
             </form>

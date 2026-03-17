@@ -25,6 +25,10 @@ export default function HomePage() {
   const newTitle = useMemo(() => "New Arrivals", []);
 
   useEffect(() => {
+    document.title = "Young Diamond Store";
+  }, []);
+
+  useEffect(() => {
     let alive = true;
 
     const run = async () => {

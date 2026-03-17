@@ -7,6 +7,8 @@ import type { ProductListQuery } from "../../../types/client";
 // import ProductsFilterBar from "../../../components/client/products/ProductsFilterBar";
 import ProductGrid from "../../../components/client/products/ProductGrid";
 import PaginationLite from "../../../components/client/products/PaginationLite";
+import { homeApi } from "../../../api/client/home.api";
+import type { HomeCategory } from "../../../api/client/home.api";
 
 function toNumber(v: string | null): number | undefined {
   if (!v) return undefined;
@@ -95,6 +97,44 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<ProductCardDTO[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [categories, setCategories] = useState<HomeCategory[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        const res = await homeApi.getCategories();
+        if (!alive) return;
+        setCategories(res.data || []);
+      } catch (e) {
+        console.error("Failed to load categories for title", e);
+        if (!alive) return;
+        setCategories([]);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const selectedCategoryTitle = useMemo(() => {
+    if (!query.product_category_id) return "";
+
+    const matched = categories.find((c) => c._id === query.product_category_id);
+
+    return matched?.title?.trim() || "";
+  }, [categories, query.product_category_id]);
+
+  useEffect(() => {
+    if (selectedCategoryTitle) {
+      document.title = `${selectedCategoryTitle} - Young Diamond`;
+      return;
+    }
+
+    document.title = "Young Diamond Store";
+  }, [selectedCategoryTitle]);
 
   useEffect(() => {
     let alive = true;
@@ -124,20 +164,6 @@ export default function ProductsPage() {
   }, [query]);
 
   const hasNext = products.length === (query.limit ?? 12);
-
-  // const onApply = (next: ProductListQuery) => {
-  //   setSearchParamsFromQuery(setSearchParams, next);
-  // };
-
-  // const onReset = () => {
-  //   // giữ category nếu bạn muốn reset mà vẫn ở category
-  //   const keepCategory = query.product_category_id;
-  //   setSearchParamsFromQuery(setSearchParams, {
-  //     page: 1,
-  //     limit: 12,
-  //     product_category_id: keepCategory,
-  //   });
-  // };
 
   const onPrev = () => {
     const page = query.page ?? 1;
