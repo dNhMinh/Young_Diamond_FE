@@ -1,3 +1,4 @@
+//src/components/client/home/HomeReviews.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import SectionTitle from "../common/SectionTitle";
 import type { FeedbackReview } from "../../../api/client/reviews.api";
@@ -74,6 +75,18 @@ export default function HomeReviews({ reviews, autoPlayMs = 3800 }: Props) {
     pageRef.current = p;
   };
 
+  const goPrev = () => {
+    const pages = pageCountRef.current;
+    const next = pageRef.current <= 0 ? pages - 1 : pageRef.current - 1;
+    goToPage(next);
+  };
+
+  const goNext = () => {
+    const pages = pageCountRef.current;
+    const next = (pageRef.current + 1) % pages;
+    goToPage(next);
+  };
+
   useEffect(() => {
     const el = scrollerRef.current;
     if (!canShow || !el) return;
@@ -134,7 +147,7 @@ export default function HomeReviews({ reviews, autoPlayMs = 3800 }: Props) {
     <section className="py-16">
       <SectionTitle title="Customer Reviews." subtitle={undefined} />
 
-      <div
+      {/* <div
         ref={scrollerRef}
         onMouseEnter={() => setIsHover(true)}
         onMouseLeave={() => setIsHover(false)}
@@ -144,8 +157,7 @@ export default function HomeReviews({ reviews, autoPlayMs = 3800 }: Props) {
           pb-10
           [-ms-overflow-style:none] [scrollbar-width:none]
         "
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
+        style={{ WebkitOverflowScrolling: "touch" }}>
         <style>{`div::-webkit-scrollbar{display:none}`}</style>
 
         {reviews.map((r) => (
@@ -156,16 +168,14 @@ export default function HomeReviews({ reviews, autoPlayMs = 3800 }: Props) {
       w-full
       sm:w-[calc((100%-2.5rem)/2)]
       lg:w-[calc((100%-7.5rem)/4)]
-    "
-          >
+    ">
             <div className="min-h-[180px] flex flex-col">
               <p
                 className="
           text-[15px] leading-[1.9]
           text-neutral-500 italic
           whitespace-pre-line
-        "
-              >
+        ">
                 “{clampText(r.content, 420)}”
               </p>
 
@@ -176,14 +186,135 @@ export default function HomeReviews({ reviews, autoPlayMs = 3800 }: Props) {
       tracking-[0.35em]
       font-semibold
       text-neutral-900
-    "
-                >
+    ">
                   — {displayName(r.fullName)} —
                 </div>
               </div>
             </div>
           </div>
         ))}
+      </div> */}
+
+      <div className="group relative mt-10">
+        {pageCount > 1 ? (
+          <>
+            <button
+              type="button"
+              onClick={goPrev}
+              aria-label="Previous reviews"
+              className="
+          absolute left-3 top-1/2 z-10 -translate-y-1/2
+          flex h-11 w-11 items-center justify-center
+          rounded-full
+          border border-white/70
+          bg-white/75 text-black/80
+          backdrop-blur-md
+          shadow-[0_8px_24px_rgba(0,0,0,0.12)]
+          opacity-0 group-hover:opacity-100
+          transition-all duration-200
+          hover:-translate-y-1/2 hover:scale-105 hover:bg-white hover:text-black hover:shadow-[0_12px_30px_rgba(0,0,0,0.18)]
+          active:scale-95
+        ">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true">
+                <path
+                  d="M14.5 6.5L9 12L14.5 17.5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              onClick={goNext}
+              aria-label="Next reviews"
+              className="
+          absolute right-3 top-1/2 z-10 -translate-y-1/2
+          flex h-11 w-11 items-center justify-center
+          rounded-full
+          border border-white/70
+          bg-white/75 text-black/80
+          backdrop-blur-md
+          shadow-[0_8px_24px_rgba(0,0,0,0.12)]
+          opacity-0 group-hover:opacity-100
+          transition-all duration-200
+          hover:-translate-y-1/2 hover:scale-105 hover:bg-white hover:text-black hover:shadow-[0_12px_30px_rgba(0,0,0,0.18)]
+          active:scale-95
+        ">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true">
+                <path
+                  d="M9.5 6.5L15 12L9.5 17.5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </>
+        ) : null}
+
+        <div
+          ref={scrollerRef}
+          onMouseEnter={() => setIsHover(true)}
+          onMouseLeave={() => setIsHover(false)}
+          className="
+      flex gap-10 overflow-x-auto
+      snap-x snap-mandatory scroll-smooth
+      pb-10
+      [-ms-overflow-style:none] [scrollbar-width:none]
+    "
+          style={{ WebkitOverflowScrolling: "touch" }}>
+          <style>{`div::-webkit-scrollbar{display:none}`}</style>
+
+          {reviews.map((r) => (
+            <div
+              key={r._id}
+              className="
+          snap-start shrink-0
+          w-full
+          sm:w-[calc((100%-2.5rem)/2)]
+          lg:w-[calc((100%-7.5rem)/4)]
+        ">
+              <div className="min-h-[180px] flex flex-col">
+                <p
+                  className="
+              text-[15px] leading-[1.9]
+              text-neutral-500 italic
+              whitespace-pre-line
+            ">
+                  “{clampText(r.content, 420)}”
+                </p>
+
+                <div className="text-center mt-[clamp(30px,1.6vh,18px)]">
+                  <div
+                    className="
+                text-[11px] md:text-[12px]
+                tracking-[0.35em]
+                font-semibold
+                text-neutral-900
+              ">
+                    — {displayName(r.fullName)} —
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {pageCount > 1 ? (
