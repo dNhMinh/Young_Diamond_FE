@@ -1,12 +1,14 @@
-//src/pages/admin/agent-requests/AgentRequestsPage.tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  deleteAgentRequestApi,
   getAdminAgentRequestsApi,
   getBusinessFormsApi,
+  updateAgentRequestIsContactedApi,
   type AgentRequest,
 } from "../../../api/admin/agentRequests.api";
 
 type FetchStatus = "loading" | "success" | "error";
+type ViewMode = "active" | "trash";
 
 function fmtDate(v?: string) {
   if (!v) return "-";
@@ -30,6 +32,12 @@ export default function AgentRequestsPage() {
   const [items, setItems] = useState<AgentRequest[]>([]);
   const [forms, setForms] = useState<FormIndex>({});
   const [status, setStatus] = useState<FetchStatus>("loading");
+  const [viewMode, setViewMode] = useState<ViewMode>("active");
+
+  const [updatingContactId, setUpdatingContactId] = useState<string | null>(
+    null,
+  );
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // chống race condition (bấm refresh nhiều lần)
   const reqIdRef = useRef(0);
@@ -38,7 +46,6 @@ export default function AgentRequestsPage() {
     const showLoading = opts?.showLoading ?? true;
     const reqId = ++reqIdRef.current;
 
-    // ✅ chỉ show loading khi user refresh
     if (showLoading) setStatus("loading");
 
     try {
@@ -47,7 +54,6 @@ export default function AgentRequestsPage() {
         getBusinessFormsApi(),
       ]);
 
-      // bỏ qua kết quả cũ nếu có request mới hơn
       if (reqIdRef.current !== reqId) return;
 
       const reqs = reqRes.data.data ?? [];
@@ -71,7 +77,6 @@ export default function AgentRequestsPage() {
     }
   }, []);
 
-  // ✅ Mount: defer load ra khỏi effect để tránh warning "setState synchronously..."
   useEffect(() => {
     let alive = true;
 
@@ -86,7 +91,91 @@ export default function AgentRequestsPage() {
     };
   }, [load]);
 
-  const total = useMemo(() => items.length, [items]);
+  const activeItems = useMemo(() => items.filter((x) => !x.deleted), [items]);
+
+  const trashItems = useMemo(() => items.filter((x) => !!x.deleted), [items]);
+
+  const visibleItems = useMemo(() => {
+    return viewMode === "trash" ? trashItems : activeItems;
+  }, [viewMode, activeItems, trashItems]);
+
+  const total = useMemo(() => activeItems.length, [activeItems]);
+  const trashTotal = useMemo(() => trashItems.length, [trashItems]);
+
+  const handleMarkContacted = async (agentRequestId: string) => {
+    const row = items.find((x) => x._id === agentRequestId);
+    if (!row) return;
+
+    if (row.isContacted) {
+      alert("Yêu cầu này đã được đánh dấu liên hệ.");
+      return;
+    }
+
+    const ok = confirm("Đánh dấu yêu cầu này là đã liên hệ?");
+    if (!ok) return;
+
+    setUpdatingContactId(agentRequestId);
+
+    // optimistic update
+    setItems((prev) =>
+      prev.map((x) =>
+        x._id === agentRequestId ? { ...x, isContacted: true } : x,
+      ),
+    );
+
+    try {
+      const res = await updateAgentRequestIsContactedApi(agentRequestId);
+      alert(res.data.message || "Cập nhật thành công");
+    } catch (e) {
+      console.error(e);
+      alert("Cập nhật trạng thái liên hệ thất bại.");
+
+      // revert
+      setItems((prev) =>
+        prev.map((x) =>
+          x._id === agentRequestId
+            ? { ...x, isContacted: row.isContacted ?? false }
+            : x,
+        ),
+      );
+    } finally {
+      setUpdatingContactId(null);
+    }
+  };
+
+  const handleDelete = async (agentRequestId: string) => {
+    const row = items.find((x) => x._id === agentRequestId);
+    if (!row) return;
+
+    const ok = confirm("Bạn có chắc muốn chuyển yêu cầu này vào thùng rác?");
+    if (!ok) return;
+
+    setDeletingId(agentRequestId);
+
+    // optimistic update
+    setItems((prev) =>
+      prev.map((x) => (x._id === agentRequestId ? { ...x, deleted: true } : x)),
+    );
+
+    try {
+      const res = await deleteAgentRequestApi(agentRequestId);
+      alert(res.data.message || "Xóa thành công");
+    } catch (e) {
+      console.error(e);
+      alert("Xóa yêu cầu thất bại.");
+
+      // revert
+      setItems((prev) =>
+        prev.map((x) =>
+          x._id === agentRequestId
+            ? { ...x, deleted: row.deleted ?? false }
+            : x,
+        ),
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -94,13 +183,47 @@ export default function AgentRequestsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-white">Agent Requests</h2>
-          <p className="mt-1 text-sm text-gray-400">Total: {total}</p>
+          <p className="mt-1 text-sm text-gray-400">
+            Total: {total} • Trash: {trashTotal}
+          </p>
         </div>
 
         <button
           onClick={() => void load({ showLoading: true })}
           className="rounded-lg border border-white/15 px-4 py-2 text-sm text-white hover:bg-white/10">
           Refresh
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setViewMode("active")}
+          className={[
+            "rounded-lg px-4 py-2 text-sm font-medium transition",
+            viewMode === "active"
+              ? "bg-white text-black"
+              : "border border-white/15 text-white hover:bg-white/10",
+          ].join(" ")}>
+          Danh sách yêu cầu
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setViewMode("trash")}
+          className={[
+            "rounded-lg px-4 py-2 text-sm font-medium transition",
+            viewMode === "trash"
+              ? "bg-white text-black"
+              : "border border-white/15 text-white hover:bg-white/10",
+          ].join(" ")}>
+          Thùng rác
+          {trashTotal > 0 ? (
+            <span className="ml-2 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+              {trashTotal}
+            </span>
+          ) : null}
         </button>
       </div>
 
@@ -117,15 +240,21 @@ export default function AgentRequestsPage() {
                 <th className="px-4 py-3 text-left">Business form</th>
                 <th className="px-4 py-3 text-left">Address</th>
                 <th className="px-4 py-3 text-left">Link shop</th>
+                <th className="px-4 py-3 text-left">Liên hệ</th>
                 <th className="px-4 py-3 text-left">Created</th>
+                {viewMode === "active" ? (
+                  <th className="px-4 py-3 text-right">Actions</th>
+                ) : null}
               </tr>
             </thead>
 
             <tbody>
-              {items.length ? (
-                items.map((x) => {
+              {visibleItems.length ? (
+                visibleItems.map((x) => {
                   const formId = x.bussinessForm;
                   const form = formId ? forms[formId] : undefined;
+                  const rowUpdatingContact = updatingContactId === x._id;
+                  const rowDeleting = deletingId === x._id;
 
                   return (
                     <tr
@@ -175,19 +304,6 @@ export default function AgentRequestsPage() {
                         ) : null}
                       </td>
 
-                      {/* <td className="px-4 py-3">
-                        {x.linkShop ? (
-                          <a
-                            href={x.linkShop}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-white hover:underline">
-                            Open
-                          </a>
-                        ) : (
-                          <span className="text-white/40">-</span>
-                        )}
-                      </td> */}
                       <td className="px-4 py-3">
                         {x.linkShop ? (
                           <a
@@ -202,18 +318,54 @@ export default function AgentRequestsPage() {
                         )}
                       </td>
 
+                      <td className="px-4 py-3">
+                        {x.isContacted ? (
+                          <span className="inline-flex items-center rounded-full bg-green-500/15 px-3 py-1 text-xs font-medium text-green-300">
+                            ✓ Đã liên hệ
+                          </span>
+                        ) : viewMode === "active" ? (
+                          <button
+                            type="button"
+                            onClick={() => void handleMarkContacted(x._id)}
+                            disabled={rowUpdatingContact}
+                            className="inline-flex items-center rounded-full border border-yellow-400/30 bg-yellow-500/10 px-3 py-1 text-xs font-medium text-yellow-300 hover:bg-yellow-500/15 disabled:opacity-60">
+                            {rowUpdatingContact
+                              ? "Đang cập nhật..."
+                              : "Đánh dấu đã liên hệ"}
+                          </button>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-white/60">
+                            Chưa liên hệ
+                          </span>
+                        )}
+                      </td>
+
                       <td className="px-4 py-3 text-white/80">
                         {fmtDate(x.createdAt)}
                       </td>
+
+                      {viewMode === "active" ? (
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(x._id)}
+                            disabled={rowDeleting}
+                            className="rounded-lg border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/10 disabled:opacity-60">
+                            {rowDeleting ? "Đang xóa..." : "Xóa tạm"}
+                          </button>
+                        </td>
+                      ) : null}
                     </tr>
                   );
                 })
               ) : (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={viewMode === "active" ? 7 : 6}
                     className="px-4 py-6 text-center text-gray-400">
-                    No agent requests
+                    {viewMode === "trash"
+                      ? "Thùng rác đang trống"
+                      : "No agent requests"}
                   </td>
                 </tr>
               )}

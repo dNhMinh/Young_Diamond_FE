@@ -1,3 +1,4 @@
+//src/api/admin/agentRequests.api.ts
 import baseApi from "../../api/baseApi";
 import type { ApiResponse } from "../../types/order";
 
@@ -12,12 +13,14 @@ export type BusinessForm = {
 export type AgentRequest = {
   _id: string;
   fullName: string;
-  bussinessForm?: string; // backend đang trả key này
+  bussinessForm?: string;
   phoneNumber: string;
   email: string;
   address: string;
   linkShop?: string;
   description?: string;
+  isContacted?: boolean;
+  deleted?: boolean;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -57,5 +60,17 @@ export const updateBusinessFormApi = (
 export const deleteBusinessFormApi = (bussinessId: string) => {
   return baseApi.delete<ApiResponse<unknown>>(
     `/admin/agent-requests/delete-business-form/${bussinessId}`,
+  );
+};
+
+export const updateAgentRequestIsContactedApi = (agentRequestId: string) => {
+  return baseApi.patch<ApiResponse<{ _id: string; isContacted: boolean }>>(
+    `/admin/agent-requests/update-isContact/${agentRequestId}`,
+  );
+};
+
+export const deleteAgentRequestApi = (agentRequestId: string) => {
+  return baseApi.delete<ApiResponse<unknown>>(
+    `/admin/agent-requests/delete/${agentRequestId}`,
   );
 };
