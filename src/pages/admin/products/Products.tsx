@@ -1,3 +1,4 @@
+//src/pages/admin/products/Products.tsx
 import { useEffect, useMemo, useState } from "react";
 import {
   createProductApi,
@@ -11,6 +12,7 @@ import { Link } from "react-router-dom";
 import ProductFormModal, {
   type ProductFormValues,
   type SizeItem,
+  type VariantItem,
 } from "../../../components/admin/modals/ProductFormModal";
 import type { ProductListItem } from "../../../types/product";
 
@@ -29,6 +31,13 @@ const normalizeSizeArray = (arr?: SizeItem[]) =>
     type: String(s.type ?? "").trim(),
   }));
 
+const normalizeVariantArray = (arr?: VariantItem[]) =>
+  (arr ?? []).map((v) => ({
+    color: String(v.color ?? "").trim(),
+    images: (v.images ?? []).map((x) => String(x).trim()).filter(Boolean),
+    stock: Number(v.stock ?? 0),
+  }));
+
 const deepEqual = (a: unknown, b: unknown) =>
   JSON.stringify(a) === JSON.stringify(b);
 
@@ -36,45 +45,86 @@ const deepEqual = (a: unknown, b: unknown) =>
  * Create diff payload between initial and current.
  * Return Partial payload compatible with backend update.
  */
+// function buildProductDiff(
+//   initial: ProductFormValues,
+//   current: ProductFormValues,
+// ): UpdateProductPayload {
+//   const diff: UpdateProductPayload = {};
+
+//   // primitive fields
+//   if (trim(current.title) !== trim(initial.title)) diff.title = current.title;
+//   if (trim(current.description) !== trim(initial.description))
+//     diff.description = current.description;
+
+//   if (Number(current.price) !== Number(initial.price))
+//     diff.price = current.price;
+//   if (Number(current.stock) !== Number(initial.stock))
+//     diff.stock = current.stock;
+
+//   // discount: treat as number, allow 0
+//   if (Number(current.discount ?? 0) !== Number(initial.discount ?? 0))
+//     diff.discount = current.discount ?? 0;
+
+//   // status
+//   if (current.status !== initial.status) diff.status = current.status;
+
+//   // category
+//   if (current.product_category_id !== initial.product_category_id)
+//     diff.product_category_id = current.product_category_id;
+
+//   // arrays
+//   const curImages = normalizeStringArray(current.images);
+//   const initImages = normalizeStringArray(initial.images);
+//   if (!deepEqual(curImages, initImages)) diff.images = curImages;
+
+//   const curColors = normalizeStringArray(current.color);
+//   const initColors = normalizeStringArray(initial.color);
+//   if (!deepEqual(curColors, initColors)) diff.color = curColors;
+
+//   const curSize = normalizeSizeArray(current.size);
+//   const initSize = normalizeSizeArray(initial.size);
+//   if (!deepEqual(curSize, initSize)) diff.size = curSize;
+
+//   return diff;
+// }
+
 function buildProductDiff(
   initial: ProductFormValues,
   current: ProductFormValues,
 ): UpdateProductPayload {
   const diff: UpdateProductPayload = {};
 
-  // primitive fields
   if (trim(current.title) !== trim(initial.title)) diff.title = current.title;
   if (trim(current.description) !== trim(initial.description))
     diff.description = current.description;
 
   if (Number(current.price) !== Number(initial.price))
     diff.price = current.price;
-  if (Number(current.stock) !== Number(initial.stock))
-    diff.stock = current.stock;
 
-  // discount: treat as number, allow 0
+  if (Number(current.position) !== Number(initial.position))
+    diff.position = current.position;
+
+  if (Boolean(current.isManageStock) !== Boolean(initial.isManageStock))
+    diff.isManageStock = current.isManageStock;
+
   if (Number(current.discount ?? 0) !== Number(initial.discount ?? 0))
     diff.discount = current.discount ?? 0;
 
-  // status
   if (current.status !== initial.status) diff.status = current.status;
 
-  // category
   if (current.product_category_id !== initial.product_category_id)
     diff.product_category_id = current.product_category_id;
 
-  // arrays
-  const curImages = normalizeStringArray(current.images);
-  const initImages = normalizeStringArray(initial.images);
-  if (!deepEqual(curImages, initImages)) diff.images = curImages;
-
-  const curColors = normalizeStringArray(current.color);
-  const initColors = normalizeStringArray(initial.color);
-  if (!deepEqual(curColors, initColors)) diff.color = curColors;
+  if (trim(current.thumbnail) !== trim(initial.thumbnail))
+    diff.thumbnail = current.thumbnail;
 
   const curSize = normalizeSizeArray(current.size);
   const initSize = normalizeSizeArray(initial.size);
   if (!deepEqual(curSize, initSize)) diff.size = curSize;
+
+  const curVariant = normalizeVariantArray(current.variant);
+  const initVariant = normalizeVariantArray(initial.variant);
+  if (!deepEqual(curVariant, initVariant)) diff.variant = curVariant;
 
   return diff;
 }
@@ -152,10 +202,37 @@ export default function AdminProducts() {
       const res = await getProductDetailApi(slug);
       const p = res.data.data;
 
+      // const mappedSize: SizeItem[] = (p.size ?? []).map((s) => ({
+      //   freeSize: Boolean(s.freeSize),
+      //   size: s.size ?? "",
+      //   type: s.type ?? "",
+      // }));
+
+      // const full: ProductFormValues = {
+      //   title: p.title ?? "",
+      //   description: p.description ?? "",
+      //   price: Number(p.price ?? 0),
+      //   product_category_id: p.product_category_id ?? "",
+      //   images: p.images ?? [],
+      //   stock: Number(p.stock ?? 0),
+      //   discount: Number(p.discount ?? 0),
+      //   status: p.status,
+      //   color: p.color ?? [],
+      //   size: mappedSize.length
+      //     ? mappedSize
+      //     : [{ freeSize: false, size: "M", type: "standard" }],
+      // };
+
       const mappedSize: SizeItem[] = (p.size ?? []).map((s) => ({
         freeSize: Boolean(s.freeSize),
         size: s.size ?? "",
         type: s.type ?? "",
+      }));
+
+      const mappedVariant: VariantItem[] = (p.variant ?? []).map((v) => ({
+        color: v.color ?? "",
+        images: v.images ?? [],
+        stock: Number(v.stock ?? 0),
       }));
 
       const full: ProductFormValues = {
@@ -163,14 +240,17 @@ export default function AdminProducts() {
         description: p.description ?? "",
         price: Number(p.price ?? 0),
         product_category_id: p.product_category_id ?? "",
-        images: p.images ?? [],
-        stock: Number(p.stock ?? 0),
+        thumbnail: p.thumbnail ?? "",
+        position: Number(p.position ?? 0),
+        isManageStock: Boolean(p.isManageStock),
         discount: Number(p.discount ?? 0),
         status: p.status,
-        color: p.color ?? [],
         size: mappedSize.length
           ? mappedSize
           : [{ freeSize: false, size: "M", type: "standard" }],
+        variant: mappedVariant.length
+          ? mappedVariant
+          : [{ color: "", images: [], stock: 0 }],
       };
 
       setEditingId(p._id);
@@ -244,15 +324,13 @@ export default function AdminProducts() {
         <div className="flex gap-3">
           <Link
             to="/admin/products/trash"
-            className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
-          >
+            className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
             Trash
           </Link>
 
           <button
             onClick={openCreate}
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-gray-200"
-          >
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-gray-200">
             Add Product
           </button>
         </div>
@@ -270,8 +348,7 @@ export default function AdminProducts() {
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as ProductStatusFilter)}
-          className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm text-white"
-        >
+          className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm text-white">
           <option value="all">All status</option>
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
@@ -287,7 +364,7 @@ export default function AdminProducts() {
               <th className="px-4 py-3 text-left">Image</th>
               <th className="px-4 py-3 text-left">Title</th>
               <th className="px-4 py-3 text-left">Price</th>
-              <th className="px-4 py-3 text-left">Stock</th>
+              <th className="px-4 py-3 text-left">Position</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
@@ -310,12 +387,11 @@ export default function AdminProducts() {
               products.map((product) => (
                 <tr
                   key={product._id}
-                  className="border-t border-white/5 hover:bg-white/5"
-                >
+                  className="border-t border-white/5 hover:bg-white/5">
                   <td className="px-4 py-3">
                     <Link to={`/admin/products/${product.slug}`}>
                       <img
-                        src={product.image}
+                        src={product.thumbnail || product.image || ""}
                         alt={product.title}
                         className="h-12 w-12 rounded object-cover"
                       />
@@ -328,7 +404,9 @@ export default function AdminProducts() {
                     {product.price.toLocaleString()}₫
                   </td>
 
-                  <td className="px-4 py-3 text-white">{product.stock}</td>
+                  <td className="px-4 py-3 text-white">
+                    {product.position ?? "-"}
+                  </td>
 
                   <td className="px-4 py-3">
                     <StatusBadge status={product.status} />
@@ -338,15 +416,13 @@ export default function AdminProducts() {
                     <button
                       onClick={() => openEdit(product.slug)}
                       disabled={isRowOpening(product.slug)}
-                      className="mr-3 text-blue-400 hover:underline disabled:opacity-60"
-                    >
+                      className="mr-3 text-blue-400 hover:underline disabled:opacity-60">
                       {isRowOpening(product.slug) ? "Loading..." : "Edit"}
                     </button>
 
                     <button
                       onClick={() => handleSoftDelete(product._id)}
-                      className="text-red-400 hover:underline"
-                    >
+                      className="text-red-400 hover:underline">
                       Delete
                     </button>
                   </td>
@@ -380,8 +456,7 @@ function StatusBadge({ status }: { status: string }) {
     <span
       className={`rounded-full px-3 py-1 text-xs ${
         map[status] ?? "bg-gray-500/20 text-gray-400"
-      }`}
-    >
+      }`}>
       {status}
     </span>
   );

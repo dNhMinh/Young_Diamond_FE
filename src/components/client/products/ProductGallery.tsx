@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from "react";
+//src/components/client/products/ProductGallery.tsx
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Props = {
   images: string[];
@@ -13,6 +14,9 @@ export default function ProductGallery({ images, title }: Props) {
   const [isHover, setIsHover] = useState(false);
   const [lens, setLens] = useState({ x: 0, y: 0, px: 50, py: 50 });
 
+  useEffect(() => {
+    setActive(0);
+  }, [images]);
   const activeSrc = safeImages[active] || safeImages[0] || "";
 
   const onMove = (e: React.MouseEvent) => {
@@ -51,8 +55,7 @@ export default function ProductGallery({ images, title }: Props) {
                   ? "ring-1 ring-black"
                   : "ring-1 ring-black/10 hover:ring-black/30",
               ].join(" ")}
-              aria-label={`View image ${idx + 1}`}
-            >
+              aria-label={`View image ${idx + 1}`}>
               <img
                 src={src}
                 alt={title}
@@ -79,8 +82,7 @@ export default function ProductGallery({ images, title }: Props) {
                   className={[
                     "shrink-0 w-[64px] aspect-square overflow-hidden bg-white",
                     activeThumb ? "ring-1 ring-black" : "ring-1 ring-black/10",
-                  ].join(" ")}
-                >
+                  ].join(" ")}>
                   <img
                     src={src}
                     alt={title}
@@ -97,8 +99,7 @@ export default function ProductGallery({ images, title }: Props) {
           className="relative bg-white"
           onMouseEnter={() => setIsHover(true)}
           onMouseLeave={() => setIsHover(false)}
-          onMouseMove={onMove}
-        >
+          onMouseMove={onMove}>
           <div className="w-full aspect-square bg-neutral-50 overflow-hidden">
             <img
               src={activeSrc}
@@ -116,8 +117,7 @@ export default function ProductGallery({ images, title }: Props) {
                 left: lens.x,
                 top: lens.y,
                 transform: "translate(-50%, -50%)",
-              }}
-            >
+              }}>
               <div
                 className="rounded-full border border-black/20 shadow-[0_10px_40px_rgba(0,0,0,0.18)]"
                 style={{

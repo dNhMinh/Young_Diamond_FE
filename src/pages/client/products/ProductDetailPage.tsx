@@ -91,10 +91,16 @@ export default function ProductDetailPage() {
         setProduct(p);
 
         // default size/color
+        // const firstSize = p.size?.[0]?._id || null;
+        // const firstColor = p.color?.[0] || null;
+        // setSelectedSizeId(firstSize);
+        // setSelectedColor(firstColor);
+        // default size/color
         const firstSize = p.size?.[0]?._id || null;
-        const firstColor = p.color?.[0] || null;
         setSelectedSizeId(firstSize);
-        setSelectedColor(firstColor);
+
+        // mặc định chưa chọn màu => hiển thị tất cả ảnh theo thứ tự variant
+        setSelectedColor(null);
       } catch (err: unknown) {
         console.error(err);
         if (!alive) return;
@@ -117,16 +123,84 @@ export default function ProductDetailPage() {
     };
   }, [slug]);
 
-  const images = useMemo(
-    () => product?.images?.filter(Boolean) || [],
-    [product],
-  );
+  // const images = useMemo(
+  //   () => product?.images?.filter(Boolean) || [],
+  //   [product],
+  // );
+
+  const colorOptions = useMemo(() => {
+    return (product?.variant ?? [])
+      .map((v) => v.color?.trim())
+      .filter(Boolean) as string[];
+  }, [product?.variant]);
+
+  const selectedVariant = useMemo(() => {
+    if (!product || !selectedColor) return null;
+    return (
+      (product.variant ?? []).find((v) => v.color === selectedColor) || null
+    );
+  }, [product, selectedColor]);
+
+  const images = useMemo(() => {
+    if (!product) return [];
+
+    // nếu đã chọn màu => chỉ hiện ảnh của màu đó
+    if (selectedVariant) {
+      return (selectedVariant.images ?? []).filter(Boolean);
+    }
+
+    // mặc định chưa chọn màu => hiện tất cả ảnh theo thứ tự variant
+    const allVariantImages = (product.variant ?? []).flatMap((v) =>
+      (v.images ?? []).filter(Boolean),
+    );
+
+    if (allVariantImages.length > 0) return allVariantImages;
+
+    // fallback an toàn
+    return product.images?.filter(Boolean) || [];
+  }, [product, selectedVariant]);
+
+  // const inStock = useMemo(() => {
+  //   if (!product) return false;
+  //   if (product.status !== "active") return false;
+  //   return (product.stock || 0) > 0;
+  // }, [product]);
+
+  const availableStock = useMemo(() => {
+    if (!product) return 0;
+
+    // nếu đã chọn màu thì lấy stock của đúng variant đó
+    if (selectedVariant) {
+      return Number(selectedVariant.stock ?? 0);
+    }
+
+    // chưa chọn màu => cộng tổng stock các variant
+    const variantStock = (product.variant ?? []).reduce(
+      (sum, v) => sum + Number(v.stock ?? 0),
+      0,
+    );
+
+    if (variantStock > 0) return variantStock;
+
+    // fallback an toàn
+    return Number(product.stock ?? 0);
+  }, [product, selectedVariant]);
 
   const inStock = useMemo(() => {
     if (!product) return false;
     if (product.status !== "active") return false;
-    return (product.stock || 0) > 0;
-  }, [product]);
+    return availableStock > 0;
+  }, [product, availableStock]);
+
+  const requiresColorSelection = useMemo(() => {
+    return colorOptions.length > 0;
+  }, [colorOptions.length]);
+
+  const canAddToBag = useMemo(() => {
+    if (!inStock) return false;
+    if (requiresColorSelection && !selectedColor) return false;
+    return true;
+  }, [inStock, requiresColorSelection, selectedColor]);
 
   const selectedSize: ProductSize | null = useMemo(() => {
     if (!product || !selectedSizeId) return null;
@@ -168,12 +242,14 @@ export default function ProductDetailPage() {
 
   const onAddToBag = () => {
     if (!product) return;
-    if (!inStock) return;
+    if (!canAddToBag) return;
 
-    const thumb =
-      images[0] ||
-      (product as unknown as { thumbnail?: string }).thumbnail ||
-      "";
+    // const thumb =
+    //   images[0] ||
+    //   (product as unknown as { thumbnail?: string }).thumbnail ||
+    //   "";
+
+    const thumb = images[0] || product.thumbnail || "";
 
     const sizeLabel = selectedSize
       ? selectedSize.freeSize
@@ -298,7 +374,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* COLOR */}
-            {product.color?.length ? (
+            {/* {product.color?.length ? (
               <>
                 <div className="mt-8 text-sm tracking-wide text-black">
                   color:
@@ -326,23 +402,67 @@ export default function ProductDetailPage() {
                   })}
                 </div>
               </>
+            ) : null} */}
+
+            {/* COLOR */}
+            {/* COLOR */}
+            {colorOptions.length ? (
+              <>
+                <div className="mt-8 text-sm tracking-wide text-black">
+                  color:
+                </div>
+
+                <div className="mt-3 flex items-center gap-3 flex-wrap">
+                  {colorOptions.map((c) => {
+                    const active = c === selectedColor;
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setSelectedColor(c)}
+                        className={[
+                          "h-10 px-4 rounded-full border text-sm tracking-wide capitalize",
+                          "cursor-pointer transition-all duration-200",
+                          "outline-none focus-visible:ring-2 focus-visible:ring-black/60 focus-visible:ring-offset-2",
+                          "active:scale-[0.98]",
+                          active
+                            ? "border-black bg-black text-white shadow-sm"
+                            : "border-black/20 bg-white text-black/70 hover:border-black hover:text-black hover:shadow-sm hover:-translate-y-[1px]",
+                        ].join(" ")}>
+                        {c}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {selectedColor === null ? (
+                  <div className="mt-3 text-xs text-neutral-500">
+                    Vui lòng chọn màu để đặt hàng.
+                  </div>
+                ) : null}
+              </>
             ) : null}
 
             <button
               type="button"
               onClick={onAddToBag}
-              disabled={!inStock}
+              disabled={!canAddToBag}
               className={[
                 "mt-8 w-full h-14 px-6 rounded-xl",
                 "flex items-center justify-between",
                 "tracking-wide transition-all duration-200",
                 "outline-none focus-visible:ring-2 focus-visible:ring-black/60 focus-visible:ring-offset-2",
-                inStock
+                canAddToBag
                   ? "bg-black text-white cursor-pointer hover:shadow-lg hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.99]"
                   : "bg-black/30 text-white/70 cursor-not-allowed",
               ].join(" ")}>
               <span className="text-sm font-semibold">
-                {inStock ? "ADD TO BAG" : "OUT OF STOCK"}
+                {/* {inStock ? "ADD TO BAG" : "OUT OF STOCK"} */}
+                {!inStock
+                  ? "OUT OF STOCK"
+                  : requiresColorSelection && !selectedColor
+                    ? "SELECT COLOR"
+                    : "ADD TO BAG"}
               </span>
 
               {/* icon bag */}
@@ -350,7 +470,7 @@ export default function ProductDetailPage() {
                 className={[
                   "inline-flex items-center justify-center",
                   "h-9 w-9 rounded-full border",
-                  inStock
+                  canAddToBag
                     ? "border-white/15 bg-white/5 transition-all duration-200 group-hover:bg-white/10"
                     : "border-white/10 bg-white/5",
                 ].join(" ")}
@@ -395,7 +515,7 @@ export default function ProductDetailPage() {
                 ) : null}
 
                 <li className="leading-relaxed">
-                  Số lượng còn lại: {product.stock}
+                  Số lượng còn lại: {availableStock}
                 </li>
               </ul>
             </div>

@@ -148,6 +148,10 @@ export default function CheckoutPage() {
     return removeVietnameseTones(`${name}  ${phone}`);
   }, [fullName, phoneNumber]);
 
+  const hasMissingColor = useMemo(() => {
+    return state.items.some((it) => !it.color?.trim());
+  }, [state.items]);
+
   const canSubmit = useMemo(() => {
     if (state.items.length === 0) return false;
     if (
@@ -158,6 +162,7 @@ export default function CheckoutPage() {
     )
       return false;
 
+    if (hasMissingColor) return false;
     // ✅ Rule giữ nguyên: chuyển khoản bắt buộc có ảnh chứng từ
     if (method === "bank_transfer" && !proofUrl) return false;
 
@@ -168,6 +173,7 @@ export default function CheckoutPage() {
     address,
     phoneNumber,
     email,
+    hasMissingColor,
     method,
     proofUrl,
   ]);
@@ -227,6 +233,12 @@ export default function CheckoutPage() {
   };
 
   const onPlaceOrder = async () => {
+    if (hasMissingColor) {
+      setErrMsg(
+        "Có sản phẩm chưa chọn màu. Vui lòng quay lại giỏ hàng để kiểm tra.",
+      );
+      return;
+    }
     if (!canSubmit) return;
 
     setSubmitting(true);
@@ -247,6 +259,7 @@ export default function CheckoutPage() {
           typeof it.discount === "number" && it.discount > 0
             ? Math.round(it.price * (1 - it.discount / 100))
             : it.price,
+        color: it.color ?? "",
       })),
       payment: {
         method,

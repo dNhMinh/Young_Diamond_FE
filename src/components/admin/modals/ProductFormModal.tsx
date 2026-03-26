@@ -1,3 +1,63 @@
+// //src/components/admin/modals/ProductFormModal.tsx
+// import { useEffect, useMemo, useState } from "react";
+// import AdminModal from "./AdminModal";
+// import { uploadToCloudinary } from "../../../utils/cloudinary";
+// import {
+//   getAdminProductCategoriesApi,
+//   type ProductCategoryListItem,
+// } from "../../../api/admin/productCategory.api";
+
+// export type ProductStatus = "active" | "inactive" | "out_of_stock";
+
+// export type SizeItem = {
+//   freeSize: boolean;
+//   size: string;
+//   type: string;
+// };
+
+// export type ProductFormValues = {
+//   title: string;
+//   description: string;
+//   price: number;
+//   product_category_id: string;
+//   images: string[];
+//   stock: number;
+//   discount: number;
+//   status: ProductStatus;
+//   color: string[];
+//   size: SizeItem[];
+// };
+
+// type NumberInput = number | "";
+
+// type ProductDraft = Omit<
+//   ProductFormValues,
+//   "images" | "color" | "price" | "stock" | "discount"
+// > & {
+//   price: NumberInput;
+//   stock: NumberInput;
+//   discount: NumberInput;
+// };
+
+// type Props = {
+//   open: boolean;
+//   mode: "create" | "edit";
+//   initialValues?: Partial<ProductFormValues>;
+//   onClose: () => void;
+//   onSubmit: (values: ProductFormValues) => Promise<void> | void;
+//   submitting?: boolean;
+// };
+
+// const emptyDraft: ProductDraft = {
+//   title: "",
+//   description: "",
+//   price: "",
+//   product_category_id: "",
+//   stock: "",
+//   discount: "",
+//   status: "active",
+//   size: [{ freeSize: false, size: "M", type: "standard" }],
+// };
 import { useEffect, useMemo, useState } from "react";
 import AdminModal from "./AdminModal";
 import { uploadToCloudinary } from "../../../utils/cloudinary";
@@ -14,28 +74,40 @@ export type SizeItem = {
   type: string;
 };
 
+export type VariantItem = {
+  color: string;
+  images: string[];
+  stock: number;
+};
+
 export type ProductFormValues = {
   title: string;
   description: string;
   price: number;
   product_category_id: string;
-  images: string[];
-  stock: number;
+  thumbnail: string;
+  position: number;
+  isManageStock: boolean;
   discount: number;
   status: ProductStatus;
-  color: string[];
   size: SizeItem[];
+  variant: VariantItem[];
 };
 
 type NumberInput = number | "";
 
 type ProductDraft = Omit<
   ProductFormValues,
-  "images" | "color" | "price" | "stock" | "discount"
+  "price" | "discount" | "position" | "variant"
 > & {
   price: NumberInput;
-  stock: NumberInput;
   discount: NumberInput;
+  position: NumberInput;
+  variant: Array<{
+    color: string;
+    imagesText: string;
+    stock: NumberInput;
+  }>;
 };
 
 type Props = {
@@ -52,10 +124,13 @@ const emptyDraft: ProductDraft = {
   description: "",
   price: "",
   product_category_id: "",
-  stock: "",
+  thumbnail: "",
+  position: "",
+  isManageStock: false,
   discount: "",
   status: "active",
   size: [{ freeSize: false, size: "M", type: "standard" }],
+  variant: [{ color: "", imagesText: "", stock: "" }],
 };
 
 function parseLinesOrComma(input: string) {
@@ -111,6 +186,33 @@ export default function ProductFormModal({
   const parsedColors = useMemo(() => parseComma(colorsText), [colorsText]);
 
   // reset khi mở modal
+  // useEffect(() => {
+  //   if (!open) return;
+
+  //   const merged: ProductDraft = {
+  //     ...emptyDraft,
+  //     ...initialValues,
+  //     price:
+  //       initialValues?.price === undefined || initialValues?.price === null
+  //         ? ""
+  //         : initialValues.price,
+  //     stock:
+  //       initialValues?.stock === undefined || initialValues?.stock === null
+  //         ? ""
+  //         : initialValues.stock,
+  //     discount:
+  //       initialValues?.discount === undefined ||
+  //       initialValues?.discount === null
+  //         ? ""
+  //         : initialValues.discount,
+  //     size: (initialValues?.size as SizeItem[]) ?? emptyDraft.size,
+  //   };
+
+  //   setDraft(merged);
+  //   setImagesText((initialValues?.images ?? []).join("\n"));
+  //   setColorsText((initialValues?.color ?? []).join(", "));
+  // }, [open, initialValues]);
+
   useEffect(() => {
     if (!open) return;
 
@@ -121,21 +223,28 @@ export default function ProductFormModal({
         initialValues?.price === undefined || initialValues?.price === null
           ? ""
           : initialValues.price,
-      stock:
-        initialValues?.stock === undefined || initialValues?.stock === null
+      position:
+        initialValues?.position === undefined ||
+        initialValues?.position === null
           ? ""
-          : initialValues.stock,
+          : initialValues.position,
       discount:
         initialValues?.discount === undefined ||
         initialValues?.discount === null
           ? ""
           : initialValues.discount,
+      variant: initialValues?.variant?.length
+        ? initialValues.variant.map((v) => ({
+            color: v.color ?? "",
+            imagesText: (v.images ?? []).join("\n"),
+            stock:
+              v.stock === undefined || v.stock === null ? "" : Number(v.stock),
+          }))
+        : emptyDraft.variant,
       size: (initialValues?.size as SizeItem[]) ?? emptyDraft.size,
     };
 
     setDraft(merged);
-    setImagesText((initialValues?.images ?? []).join("\n"));
-    setColorsText((initialValues?.color ?? []).join(", "));
   }, [open, initialValues]);
 
   // load categories khi mở modal
@@ -191,6 +300,86 @@ export default function ProductFormModal({
     }
   };
 
+  const handleUploadThumbnail = async (file: File | null) => {
+    if (!file) return;
+    try {
+      setUploading(true);
+      const res = await uploadToCloudinary(file);
+      setDraft((p) => ({ ...p, thumbnail: res.secure_url }));
+    } catch (e) {
+      console.error(e);
+      alert("Upload thumbnail thất bại.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUploadVariantImages = async (
+    idx: number,
+    files: FileList | null,
+  ) => {
+    if (!files || files.length === 0) return;
+
+    try {
+      setUploading(true);
+      const uploadedUrls: string[] = [];
+
+      for (const f of Array.from(files)) {
+        const res = await uploadToCloudinary(f);
+        uploadedUrls.push(res.secure_url);
+      }
+
+      setDraft((prev) => {
+        const nextVariant = [...prev.variant];
+        const currentLines = parseLinesOrComma(
+          nextVariant[idx]?.imagesText || "",
+        );
+        nextVariant[idx] = {
+          ...nextVariant[idx],
+          imagesText: [...currentLines, ...uploadedUrls].join("\n"),
+        };
+        return { ...prev, variant: nextVariant };
+      });
+    } catch (e) {
+      console.error(e);
+      alert("Upload ảnh variant thất bại.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const updateVariant = (
+    idx: number,
+    patch: Partial<{ color: string; imagesText: string; stock: NumberInput }>,
+  ) => {
+    setDraft((p) => ({
+      ...p,
+      variant: (p.variant || []).map((it, i) =>
+        i === idx ? { ...it, ...patch } : it,
+      ),
+    }));
+  };
+
+  const addVariant = () => {
+    setDraft((p) => ({
+      ...p,
+      variant: [...(p.variant || []), { color: "", imagesText: "", stock: "" }],
+    }));
+  };
+
+  const removeVariant = (idx: number) => {
+    setDraft((p) => ({
+      ...p,
+      variant: (p.variant || []).filter((_, i) => i !== idx),
+    }));
+  };
+
+  const removeVariantImage = (idx: number, url: string) => {
+    const current = parseLinesOrComma(draft.variant[idx]?.imagesText || "");
+    const next = current.filter((x) => x !== url);
+    updateVariant(idx, { imagesText: next.join("\n") });
+  };
+
   const removeImage = (url: string) => {
     const next = parsedImages.filter((x) => x !== url);
     setImagesText(next.join("\n"));
@@ -219,14 +408,42 @@ export default function ProductFormModal({
     }));
   };
 
+  // const submit = async () => {
+  //   const payload: ProductFormValues = {
+  //     ...draft,
+  //     price: toNumberOrZero(draft.price),
+  //     stock: toNumberOrZero(draft.stock),
+  //     discount: toNumberOrZero(draft.discount),
+  //     images: parsedImages,
+  //     color: parsedColors,
+  //   };
+
+  //   if (!payload.title.trim()) return alert("Vui lòng nhập title");
+  //   if (!payload.description.trim()) return alert("Vui lòng nhập description");
+  //   if (!payload.product_category_id.trim())
+  //     return alert("Vui lòng chọn danh mục sản phẩm");
+  //   if (payload.price <= 0) return alert("Price không hợp lệ");
+  //   if (payload.stock < 0) return alert("Stock không hợp lệ");
+
+  //   if (!payload.images.length) return alert("Vui lòng có ít nhất 1 ảnh");
+
+  //   // bạn có thể lọc size rỗng nếu muốn:
+  //   // payload.size = payload.size.filter(s => s.freeSize || (s.size.trim() && s.type.trim()));
+
+  //   await onSubmit(payload);
+  // };
+
   const submit = async () => {
     const payload: ProductFormValues = {
       ...draft,
       price: toNumberOrZero(draft.price),
-      stock: toNumberOrZero(draft.stock),
+      position: toNumberOrZero(draft.position),
       discount: toNumberOrZero(draft.discount),
-      images: parsedImages,
-      color: parsedColors,
+      variant: (draft.variant || []).map((v) => ({
+        color: v.color.trim(),
+        images: parseLinesOrComma(v.imagesText),
+        stock: toNumberOrZero(v.stock),
+      })),
     };
 
     if (!payload.title.trim()) return alert("Vui lòng nhập title");
@@ -234,12 +451,17 @@ export default function ProductFormModal({
     if (!payload.product_category_id.trim())
       return alert("Vui lòng chọn danh mục sản phẩm");
     if (payload.price <= 0) return alert("Price không hợp lệ");
-    if (payload.stock < 0) return alert("Stock không hợp lệ");
+    if (!payload.thumbnail.trim()) return alert("Vui lòng có thumbnail");
+    if (payload.position < 0) return alert("Position không hợp lệ");
 
-    if (!payload.images.length) return alert("Vui lòng có ít nhất 1 ảnh");
+    if (!payload.variant.length) return alert("Vui lòng có ít nhất 1 variant");
 
-    // bạn có thể lọc size rỗng nếu muốn:
-    // payload.size = payload.size.filter(s => s.freeSize || (s.size.trim() && s.type.trim()));
+    const invalidVariant = payload.variant.some(
+      (v) => !v.color || !v.images.length || v.stock < 0,
+    );
+    if (invalidVariant) {
+      return alert("Mỗi variant cần có color, ít nhất 1 ảnh và stock hợp lệ.");
+    }
 
     await onSubmit(payload);
   };
@@ -255,16 +477,14 @@ export default function ProductFormModal({
           <button
             onClick={onClose}
             className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/10"
-            disabled={submitting || uploading}
-          >
+            disabled={submitting || uploading}>
             Cancel
           </button>
 
           <button
             onClick={submit}
             className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-gray-200 disabled:opacity-60"
-            disabled={submitting || uploading}
-          >
+            disabled={submitting || uploading}>
             {uploading
               ? "Uploading..."
               : submitting
@@ -274,8 +494,7 @@ export default function ProductFormModal({
                   : "Update"}
           </button>
         </>
-      }
-    >
+      }>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <input
           className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
@@ -290,8 +509,7 @@ export default function ProductFormModal({
           onChange={(e) =>
             setDraft((p) => ({ ...p, product_category_id: e.target.value }))
           }
-          className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
-        >
+          className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30">
           <option value="">
             {catLoading ? "Loading categories..." : "Select category"}
           </option>
@@ -305,6 +523,27 @@ export default function ProductFormModal({
         <input
           type="number"
           className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
+          placeholder="Position (VD: 1)"
+          value={draft.position}
+          onChange={(e) =>
+            setDraft((p) => ({ ...p, position: toNumberInput(e.target.value) }))
+          }
+        />
+
+        <label className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm text-gray-200">
+          <input
+            type="checkbox"
+            checked={!draft.isManageStock}
+            onChange={(e) =>
+              setDraft((p) => ({ ...p, isManageStock: !e.target.checked }))
+            }
+          />
+          Không trừ tồn kho khi đặt hàng
+        </label>
+
+        <input
+          type="number"
+          className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
           placeholder="Price (VD: 5000000)"
           value={draft.price}
           onChange={(e) =>
@@ -312,7 +551,7 @@ export default function ProductFormModal({
           }
         />
 
-        <input
+        {/* <input
           type="number"
           className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
           placeholder="Stock (VD: 10)"
@@ -320,7 +559,7 @@ export default function ProductFormModal({
           onChange={(e) =>
             setDraft((p) => ({ ...p, stock: toNumberInput(e.target.value) }))
           }
-        />
+        /> */}
 
         <input
           type="number"
@@ -337,8 +576,7 @@ export default function ProductFormModal({
           onChange={(e) =>
             setDraft((p) => ({ ...p, status: e.target.value as ProductStatus }))
           }
-          className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm"
-        >
+          className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm">
           <option value="active">active</option>
           <option value="inactive">inactive</option>
           <option value="out_of_stock">out_of_stock</option>
@@ -355,7 +593,7 @@ export default function ProductFormModal({
         />
 
         {/* Images */}
-        <div className="md:col-span-2 rounded-xl border border-white/10 p-3">
+        {/* <div className="md:col-span-2 rounded-xl border border-white/10 p-3">
           <div className="mb-2 flex items-center justify-between">
             <div className="text-sm font-medium text-gray-200">
               Images ({parsedImages.length})
@@ -387,29 +625,65 @@ export default function ProductFormModal({
               {parsedImages.map((url) => (
                 <div
                   key={url}
-                  className="relative overflow-hidden rounded-lg border border-white/10"
-                >
+                  className="relative overflow-hidden rounded-lg border border-white/10">
                   <img src={url} className="h-24 w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeImage(url)}
-                    className="absolute right-2 top-2 rounded bg-black/70 px-2 py-1 text-xs text-white hover:bg-black"
-                  >
+                    className="absolute right-2 top-2 rounded bg-black/70 px-2 py-1 text-xs text-white hover:bg-black">
                     Remove
                   </button>
                 </div>
               ))}
             </div>
           )}
+        </div> */}
+
+        <div className="md:col-span-2 rounded-xl border border-white/10 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-sm font-medium text-gray-200">Thumbnail</div>
+
+            <label className="cursor-pointer rounded-lg border border-white/15 px-3 py-1 text-sm hover:bg-white/10">
+              Upload thumbnail
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploading}
+                onChange={(e) =>
+                  handleUploadThumbnail(e.target.files?.[0] || null)
+                }
+              />
+            </label>
+          </div>
+
+          <input
+            className="w-full rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
+            placeholder="Thumbnail URL"
+            value={draft.thumbnail}
+            onChange={(e) =>
+              setDraft((p) => ({ ...p, thumbnail: e.target.value }))
+            }
+          />
+
+          {draft.thumbnail ? (
+            <div className="mt-3 w-32 overflow-hidden rounded-lg border border-white/10">
+              <img
+                src={draft.thumbnail}
+                alt="thumbnail"
+                className="h-24 w-full object-cover"
+              />
+            </div>
+          ) : null}
         </div>
 
         {/* Colors */}
-        <input
+        {/* <input
           className="md:col-span-2 rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
           placeholder="Colors (phân tách bằng dấu phẩy) ví dụ: vàng, bạc"
           value={colorsText}
           onChange={(e) => setColorsText(e.target.value)}
-        />
+        /> */}
 
         {/* Sizes */}
         {/* <div className="md:col-span-2 rounded-xl border border-white/10 p-3">
@@ -466,6 +740,111 @@ export default function ProductFormModal({
             ))}
           </div>
         </div> */}
+
+        <div className="md:col-span-2 rounded-xl border border-white/10 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-sm font-medium text-gray-200">Variant</div>
+            <button
+              type="button"
+              onClick={addVariant}
+              className="rounded-lg border border-white/15 px-3 py-1 text-sm hover:bg-white/10">
+              + Add variant
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {(draft.variant || []).map((v, idx) => {
+              const parsedVariantImages = parseLinesOrComma(v.imagesText);
+
+              return (
+                <div
+                  key={idx}
+                  className="rounded-lg border border-white/10 bg-white/5 p-3">
+                  <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <input
+                      className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
+                      placeholder="Color (VD: gold, silver)"
+                      value={v.color}
+                      onChange={(e) =>
+                        updateVariant(idx, { color: e.target.value })
+                      }
+                    />
+
+                    <input
+                      type="number"
+                      className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
+                      placeholder="Stock"
+                      value={v.stock}
+                      onChange={(e) =>
+                        updateVariant(idx, {
+                          stock: toNumberInput(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="text-sm text-gray-200">
+                      Images ({parsedVariantImages.length})
+                    </div>
+
+                    <label className="cursor-pointer rounded-lg border border-white/15 px-3 py-1 text-sm hover:bg-white/10">
+                      Upload variant images
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        disabled={uploading}
+                        onChange={(e) =>
+                          handleUploadVariantImages(idx, e.target.files)
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <textarea
+                    className="w-full rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
+                    placeholder="Paste URL ảnh variant (mỗi dòng 1 URL hoặc phân tách bằng dấu phẩy)"
+                    value={v.imagesText}
+                    onChange={(e) =>
+                      updateVariant(idx, { imagesText: e.target.value })
+                    }
+                    rows={3}
+                  />
+
+                  {parsedVariantImages.length > 0 ? (
+                    <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+                      {parsedVariantImages.map((url) => (
+                        <div
+                          key={url}
+                          className="relative overflow-hidden rounded-lg border border-white/10">
+                          <img src={url} className="h-24 w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeVariantImage(idx, url)}
+                            className="absolute right-2 top-2 rounded bg-black/70 px-2 py-1 text-xs text-white hover:bg-black">
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <div className="mt-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => removeVariant(idx)}
+                      className="rounded-lg border border-white/15 px-3 py-1 text-sm text-red-300 hover:bg-white/10">
+                      Remove variant
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Sizes */}
         <div className="md:col-span-2 rounded-xl border border-white/10 p-3">
           <div className="mb-2 flex items-center justify-between">
@@ -473,8 +852,7 @@ export default function ProductFormModal({
             <button
               type="button"
               onClick={addSize}
-              className="rounded-lg border border-white/15 px-3 py-1 text-sm hover:bg-white/10"
-            >
+              className="rounded-lg border border-white/15 px-3 py-1 text-sm hover:bg-white/10">
               + Add size
             </button>
           </div>
@@ -483,8 +861,7 @@ export default function ProductFormModal({
             {(draft.size || []).map((s, idx) => (
               <div
                 key={idx}
-                className="flex flex-wrap items-center gap-2 rounded-lg bg-white/5 p-2"
-              >
+                className="flex flex-wrap items-center gap-2 rounded-lg bg-white/5 p-2">
                 <label className="flex items-center gap-2 text-xs text-gray-200">
                   <input
                     type="checkbox"
@@ -533,8 +910,7 @@ export default function ProductFormModal({
                 <button
                   type="button"
                   onClick={() => removeSize(idx)}
-                  className="rounded-lg border border-white/15 px-3 py-1 text-sm text-red-300 hover:bg-white/10"
-                >
+                  className="rounded-lg border border-white/15 px-3 py-1 text-sm text-red-300 hover:bg-white/10">
                   Remove
                 </button>
               </div>

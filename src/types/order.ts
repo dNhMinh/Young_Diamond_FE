@@ -174,6 +174,7 @@ export type OrderCreatePayload = {
     productId: string;
     quantity: number;
     price: number;
+    color?: string;
   }>;
   payment: {
     method: "cod" | "bank_transfer";

@@ -1,3 +1,4 @@
+//src/pages/admin/products/TrashProducts.tsx
 import { useEffect, useState } from "react";
 import {
   getAdminProductsApi,
@@ -69,8 +70,7 @@ export default function TrashProducts() {
 
         <Link
           to="/admin/products"
-          className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
-        >
+          className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
           ← Back to Products
         </Link>
       </div>
@@ -93,7 +93,7 @@ export default function TrashProducts() {
               <th className="px-4 py-3 text-left">Image</th>
               <th className="px-4 py-3 text-left">Title</th>
               <th className="px-4 py-3 text-left">Price</th>
-              <th className="px-4 py-3 text-left">Stock</th>
+              <th className="px-4 py-3 text-left">Position</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
@@ -116,12 +116,11 @@ export default function TrashProducts() {
               products.map((product) => (
                 <tr
                   key={product._id}
-                  className="border-t border-white/5 hover:bg-white/5"
-                >
+                  className="border-t border-white/5 hover:bg-white/5">
                   <td className="px-4 py-3">
                     <Link to={`/admin/products/${product.slug}`}>
                       <img
-                        src={product.image}
+                        src={product.thumbnail || product.image || ""}
                         alt={product.title}
                         className="h-12 w-12 cursor-pointer rounded object-cover opacity-70"
                       />
@@ -131,8 +130,7 @@ export default function TrashProducts() {
                   <td className="px-4 py-3">
                     <Link
                       to={`/admin/products/${product.slug}`}
-                      className="font-medium text-white hover:underline"
-                    >
+                      className="font-medium text-white hover:underline">
                       {product.title}
                     </Link>
                   </td>
@@ -141,7 +139,9 @@ export default function TrashProducts() {
                     {product.price.toLocaleString()}₫
                   </td>
 
-                  <td className="px-4 py-3 text-white">{product.stock}</td>
+                  <td className="px-4 py-3 text-white">
+                    {product.position ?? "-"}
+                  </td>
 
                   <td className="px-4 py-3">
                     <span className="rounded-full bg-gray-500/20 px-3 py-1 text-xs text-gray-400">
@@ -153,15 +153,13 @@ export default function TrashProducts() {
                     <div className="flex justify-end gap-4">
                       <button
                         onClick={() => handleRestore(product._id)}
-                        className="text-green-400 hover:underline"
-                      >
+                        className="text-green-400 hover:underline">
                         Restore
                       </button>
 
                       <button
                         onClick={() => handleHardDelete(product._id)}
-                        className="text-red-400 hover:underline"
-                      >
+                        className="text-red-400 hover:underline">
                         Delete
                       </button>
                     </div>
