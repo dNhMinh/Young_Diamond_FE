@@ -102,6 +102,7 @@
 //   );
 // };
 
+//src/api/admin/product.api.ts
 import baseApi from "../../api/baseApi";
 import type {
   ProductDetail,

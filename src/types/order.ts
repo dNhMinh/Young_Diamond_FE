@@ -130,6 +130,8 @@ export interface OrderProductLine {
   productId: string;
   quantity: number;
   price: number;
+  color?: string;
+  size?: string;
   _id?: string;
 }
 
@@ -175,6 +177,7 @@ export type OrderCreatePayload = {
     quantity: number;
     price: number;
     color?: string;
+    size?: string;
   }>;
   payment: {
     method: "cod" | "bank_transfer";

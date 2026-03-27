@@ -111,8 +111,7 @@ function OrderDetailPageInner({ orderId }: { orderId?: string }) {
 
         <Link
           to="/admin/orders"
-          className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
-        >
+          className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
           ← Back to Orders
         </Link>
       </div>
@@ -187,8 +186,7 @@ function OrderDetailPageInner({ orderId }: { orderId?: string }) {
                   href={proof}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-blue-400 hover:underline"
-                >
+                  className="text-blue-400 hover:underline">
                   Open image
                 </a>
               ) : (
@@ -233,6 +231,8 @@ function OrderDetailPageInner({ orderId }: { orderId?: string }) {
           <thead className="bg-white/5 text-gray-300">
             <tr>
               <th className="px-4 py-3 text-left">Product</th>
+              <th className="px-4 py-3 text-left">Color</th>
+              <th className="px-4 py-3 text-left">Size</th>
               <th className="px-4 py-3 text-right">Price</th>
               <th className="px-4 py-3 text-right">Qty</th>
               <th className="px-4 py-3 text-right">Subtotal</th>
@@ -246,15 +246,13 @@ function OrderDetailPageInner({ orderId }: { orderId?: string }) {
                 return (
                   <tr
                     key={p._id ?? `${p.productId}-${p.quantity}`}
-                    className="border-t border-white/5 hover:bg-white/5"
-                  >
+                    className="border-t border-white/5 hover:bg-white/5">
                     <td className="px-4 py-3">
                       <div className="flex flex-col">
                         {info?.slug ? (
                           <Link
                             to={`/admin/products/${info.slug}`}
-                            className="text-white hover:underline"
-                          >
+                            className="text-white hover:underline">
                             {info.title}
                           </Link>
                         ) : (
@@ -269,6 +267,13 @@ function OrderDetailPageInner({ orderId }: { orderId?: string }) {
                       </div>
                     </td>
 
+                    <td className="px-4 py-3 text-white">
+                      {p.color?.trim() || "-"}
+                    </td>
+
+                    <td className="px-4 py-3 text-white">
+                      {p.size?.trim() || "-"}
+                    </td>
                     <td className="px-4 py-3 text-right text-white">
                       {p.price.toLocaleString()}₫
                     </td>
@@ -283,7 +288,7 @@ function OrderDetailPageInner({ orderId }: { orderId?: string }) {
               })
             ) : (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-gray-400">
+                <td colSpan={6} className="px-4 py-6 text-center text-gray-400">
                   No products
                 </td>
               </tr>

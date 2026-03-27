@@ -82,6 +82,7 @@
 //   );
 // }
 
+//src/pages/admin/products/ProductDetail.tsx
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getProductDetailApi } from "../../../api/admin/product.api";

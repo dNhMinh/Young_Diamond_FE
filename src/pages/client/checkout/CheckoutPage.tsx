@@ -152,6 +152,10 @@ export default function CheckoutPage() {
     return state.items.some((it) => !it.color?.trim());
   }, [state.items]);
 
+  const hasMissingSize = useMemo(() => {
+    return state.items.some((it) => !it.sizeLabel?.trim());
+  }, [state.items]);
+
   const canSubmit = useMemo(() => {
     if (state.items.length === 0) return false;
     if (
@@ -163,7 +167,8 @@ export default function CheckoutPage() {
       return false;
 
     if (hasMissingColor) return false;
-    // ✅ Rule giữ nguyên: chuyển khoản bắt buộc có ảnh chứng từ
+    if (hasMissingSize) return false;
+    //chuyển khoản bắt buộc có ảnh chứng từ
     if (method === "bank_transfer" && !proofUrl) return false;
 
     return true;
@@ -174,6 +179,7 @@ export default function CheckoutPage() {
     phoneNumber,
     email,
     hasMissingColor,
+    hasMissingSize,
     method,
     proofUrl,
   ]);
@@ -239,6 +245,13 @@ export default function CheckoutPage() {
       );
       return;
     }
+
+    if (hasMissingSize) {
+      setErrMsg(
+        "Có sản phẩm chưa chọn size. Vui lòng quay lại giỏ hàng để kiểm tra.",
+      );
+      return;
+    }
     if (!canSubmit) return;
 
     setSubmitting(true);
@@ -260,6 +273,7 @@ export default function CheckoutPage() {
             ? Math.round(it.price * (1 - it.discount / 100))
             : it.price,
         color: it.color ?? "",
+        size: it.sizeLabel ?? "",
       })),
       payment: {
         method,
