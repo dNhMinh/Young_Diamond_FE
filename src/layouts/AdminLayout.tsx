@@ -10,7 +10,7 @@ import {
 function AdminLayoutContent() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { unreadCount } = useChatNotification();
+  const { unreadCount, orderUnreadCount } = useChatNotification();
 
   const handleLogout = () => {
     dispatch(logout());
@@ -32,7 +32,7 @@ function AdminLayoutContent() {
           <MenuItem to="/admin/dashboard" label="Dashboard" />
           <MenuItem to="/admin/products" label="Products" />
           <MenuItem to="/admin/categories" label="Categories" />
-          <MenuItem to="/admin/orders" label="Orders" />
+          <MenuItem to="/admin/orders" label="Orders" badge={orderUnreadCount} />
           <MenuItem to="/admin/reviews" label="Reviews" />
           <MenuItem to="/admin/banners" label="Banners" />
 

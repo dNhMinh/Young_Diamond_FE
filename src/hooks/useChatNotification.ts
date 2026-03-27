@@ -59,9 +59,19 @@ const playNewMessageSound = () => {
 };
 interface ChatNotificationContextType {
   unreadCount: number;
+  orderUnreadCount: number;
   markRoomRead: (roomId: string) => void;
   setChatPageActive: (active: boolean) => void;
+  setOrdersPageActive: (active: boolean) => void;
 }
+
+type AdminNewOrderPayload = {
+  orderId?: string;
+  orderCode?: string;
+  createdAt?: string;
+  totalAmount?: number;
+  customerName?: string;
+};
 
 const ChatNotificationContext =
   createContext<ChatNotificationContextType | null>(null);
@@ -73,12 +83,24 @@ export function ChatNotificationProvider({
 }) {
   const socketRef = useRef<Socket | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [orderUnreadCount, setOrderUnreadCount] = useState(0);
   const isChatPageActiveRef = useRef(false);
+  const isOrdersPageActiveRef = useRef(false);
   const unreadRoomsRef = useRef<Set<string>>(new Set());
+  const unreadOrdersRef = useRef<Set<string>>(new Set());
   const hasSocketInitializedRef = useRef(false);
 
   const setChatPageActive = useCallback((active: boolean) => {
     isChatPageActiveRef.current = active;
+  }, []);
+
+  const setOrdersPageActive = useCallback((active: boolean) => {
+    isOrdersPageActiveRef.current = active;
+
+    if (active) {
+      unreadOrdersRef.current.clear();
+      setOrderUnreadCount(0);
+    }
   }, []);
 
   useEffect(() => {
@@ -149,8 +171,24 @@ export function ChatNotificationProvider({
       setUnreadCount((prev) => prev + 1);
     });
 
+    socket.on("admin_new_order", (payload: AdminNewOrderPayload) => {
+      const orderId = payload?.orderId;
+      if (!orderId) return;
+
+      if (hasSocketInitializedRef.current && !isOrdersPageActiveRef.current) {
+        playNewMessageSound();
+      }
+
+      if (isOrdersPageActiveRef.current) return;
+      if (unreadOrdersRef.current.has(orderId)) return;
+
+      unreadOrdersRef.current.add(orderId);
+      setOrderUnreadCount((prev) => prev + 1);
+    });
+
     return () => {
       socket.off("admin_new_message");
+      socket.off("admin_new_order");
       socket.disconnect();
       socketRef.current = null;
     };
@@ -164,7 +202,15 @@ export function ChatNotificationProvider({
 
   return createElement(
     ChatNotificationContext.Provider,
-    { value: { unreadCount, markRoomRead, setChatPageActive } },
+    {
+      value: {
+        unreadCount,
+        orderUnreadCount,
+        markRoomRead,
+        setChatPageActive,
+        setOrdersPageActive,
+      },
+    },
     children,
   );
 }
@@ -174,8 +220,10 @@ export function useChatNotification() {
   if (!context) {
     return {
       unreadCount: 0,
+      orderUnreadCount: 0,
       markRoomRead: () => {},
       setChatPageActive: () => {},
+      setOrdersPageActive: () => {},
     };
   }
   return context;

@@ -13,6 +13,7 @@ import type {
   OrderStatus,
   PaymentStatus,
 } from "../../../types/order";
+import { useChatNotification } from "../../../hooks/useChatNotification";
 
 type StatusFilter = "all" | OrderStatus;
 type PaymentStatusFilter = "all" | PaymentStatus;
@@ -35,6 +36,7 @@ const PAYMENT_STATUS_STYLE: Record<PaymentStatus, string> = {
 const DROPDOWN_OPTION_CLASS = "bg-[#0f0f0f] text-white hover:bg-white/10";
 
 export default function AdminOrders() {
+  const { setOrdersPageActive } = useChatNotification();
   const [items, setItems] = useState<OrderListItem[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -69,6 +71,11 @@ export default function AdminOrders() {
   const [bulkStatusUpdating, setBulkStatusUpdating] = useState(false);
 
   const anyBulkUpdating = bulkPaymentUpdating || bulkStatusUpdating;
+
+  useEffect(() => {
+    setOrdersPageActive(true);
+    return () => setOrdersPageActive(false);
+  }, [setOrdersPageActive]);
 
   const fetchOrders = async () => {
     setLoading(true);
