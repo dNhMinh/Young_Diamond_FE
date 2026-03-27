@@ -8,7 +8,7 @@ export default function ProductCard({ p }: { p: ProductCardDTO }) {
       {/* Image */}
       <div className="aspect-square overflow-hidden bg-neutral-50">
         <img
-          src={p.image}
+          src={p.thumbnail}
           alt={p.title}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           loading="lazy"
@@ -24,8 +24,7 @@ export default function ProductCard({ p }: { p: ProductCardDTO }) {
             text-neutral-800
             transition-colors
             group-hover:text-black
-          "
-        >
+          ">
           {p.title}
         </h3>
 

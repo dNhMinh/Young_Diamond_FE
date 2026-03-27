@@ -533,9 +533,9 @@ export default function ProductFormModal({
         <label className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm text-gray-200">
           <input
             type="checkbox"
-            checked={draft.isManageStock}
+            checked={!draft.isManageStock}
             onChange={(e) =>
-              setDraft((p) => ({ ...p, isManageStock: e.target.checked }))
+              setDraft((p) => ({ ...p, isManageStock: !e.target.checked }))
             }
           />
           Không trừ tồn kho khi đặt hàng

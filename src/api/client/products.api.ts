@@ -9,7 +9,8 @@ export type ProductCardDTO = {
   price: number;
   discount?: number;
   slug: string;
-  image: string;
+  thumbnail: string;
+  position?: number;
 };
 
 export const productsApi = {
