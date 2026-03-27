@@ -12,11 +12,13 @@ import type {
   OrderListItem,
   OrderStatus,
   PaymentStatus,
+  PaymentMethod,
 } from "../../../types/order";
 import { useChatNotification } from "../../../hooks/useChatNotification";
 
 type StatusFilter = "all" | OrderStatus;
 type PaymentStatusFilter = "all" | PaymentStatus;
+type PaymentMethodFilter = "all" | PaymentMethod;
 
 const ORDER_STATUS_STYLE: Record<OrderStatus, string> = {
   pending: "bg-yellow-500/20 text-yellow-400",
@@ -33,6 +35,11 @@ const PAYMENT_STATUS_STYLE: Record<PaymentStatus, string> = {
   failed: "bg-red-500/20 text-red-400",
 };
 
+const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
+  cod: "COD",
+  bank_transfer: "Bank transfer",
+};
+
 const DROPDOWN_OPTION_CLASS = "bg-[#0f0f0f] text-white hover:bg-white/10";
 
 export default function AdminOrders() {
@@ -43,7 +50,8 @@ export default function AdminOrders() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [paymentStatus, setPaymentStatus] =
     useState<PaymentStatusFilter>("all");
-
+  const [paymentMethod, setPaymentMethod] =
+    useState<PaymentMethodFilter>("all");
   const [searchKey, setSearchKey] = useState("");
 
   const [fromDate, setFromDate] = useState("");
@@ -80,7 +88,11 @@ export default function AdminOrders() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await getAdminOrdersApi({ status, paymentStatus });
+      const res = await getAdminOrdersApi({
+        status,
+        paymentStatus,
+        paymentMethod,
+      });
       setItems(res.data.data ?? []);
     } catch (e) {
       console.error(e);
@@ -93,7 +105,7 @@ export default function AdminOrders() {
   useEffect(() => {
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, paymentStatus]);
+  }, [status, paymentStatus, paymentMethod]);
 
   // const filtered = useMemo(() => {
   //   const q = searchKey.trim().toLowerCase();
@@ -472,6 +484,24 @@ export default function AdminOrders() {
           </option>
         </select>
 
+        <select
+          value={paymentMethod}
+          onChange={(e) =>
+            setPaymentMethod(e.target.value as PaymentMethodFilter)
+          }
+          className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm text-white"
+          style={{ colorScheme: "dark" }}>
+          <option value="all" className={DROPDOWN_OPTION_CLASS}>
+            All method
+          </option>
+          <option value="cod" className={DROPDOWN_OPTION_CLASS}>
+            COD
+          </option>
+          <option value="bank_transfer" className={DROPDOWN_OPTION_CLASS}>
+            Bank transfer
+          </option>
+        </select>
+
         <input
           type="date"
           value={fromDate}
@@ -602,6 +632,7 @@ export default function AdminOrders() {
               <th className="px-4 py-3 text-left">Order Code</th>
               <th className="px-4 py-3 text-left">Total</th>
               <th className="px-4 py-3 text-left">Status</th>
+              <th className="px-4 py-3 text-left">Payment Method</th>
               <th className="px-4 py-3 text-left">Payment</th>
               <th className="px-4 py-3 text-left">Created</th>
               <th className="px-4 py-3 text-right">Actions</th>
@@ -611,19 +642,23 @@ export default function AdminOrders() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
+                <td colSpan={8} className="px-4 py-6 text-center text-gray-400">
                   Loading...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
+                <td colSpan={8} className="px-4 py-6 text-center text-gray-400">
                   Empty
                 </td>
               </tr>
             ) : (
               filtered.map((o) => {
                 const pay: PaymentStatus = o.paymentStatus ?? "pending";
+                const paymentMethodLabel =
+                  o.paymentMethod && PAYMENT_METHOD_LABEL[o.paymentMethod]
+                    ? PAYMENT_METHOD_LABEL[o.paymentMethod]
+                    : "-";
                 const rowPayUpdating = updatingPaymentId === o._id;
                 const rowStatusUpdating = updatingStatusId === o._id;
 
@@ -718,6 +753,10 @@ export default function AdminOrders() {
                           </span>
                         ) : null}
                       </div>
+                    </td>
+
+                    <td className="px-4 py-3 text-white/80">
+                      {paymentMethodLabel}
                     </td>
 
                     {/* ✅ Payment: select dạng chip, dropdown 1 màu */}

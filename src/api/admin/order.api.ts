@@ -8,21 +8,28 @@ import type {
   OrderListItem,
   OrderStatus,
   PaymentStatus,
+  PaymentMethod,
 } from "../../types/order";
 
 export const getAdminOrdersApi = (params?: {
   status?: "all" | OrderStatus;
   paymentStatus?: "all" | PaymentStatus;
+  paymentMethod?: "all" | PaymentMethod;
 }) => {
   const status =
     params?.status && params.status !== "all" ? params.status : undefined;
+
   const paymentStatus =
     params?.paymentStatus && params.paymentStatus !== "all"
       ? params.paymentStatus
       : undefined;
 
+  const paymentMethod =
+    params?.paymentMethod && params.paymentMethod !== "all"
+      ? params.paymentMethod
+      : undefined;
   return baseApi.get<ApiResponse<OrderListItem[]>>("/admin/orders", {
-    params: { status, paymentStatus },
+    params: { status, paymentStatus, paymentMethod },
   });
 };
 

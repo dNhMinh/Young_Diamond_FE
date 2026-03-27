@@ -1,13 +1,4 @@
-// // src/types/order.ts
-// export type OrderStatus =
-//   | "pending"
-//   | "confirmed"
-//   | "shipped"
-//   | "delayed"
-//   | "delivered"
-//   | "failed";
-
-// export type PaymentStatus = "pending" | "paid" | "failed";
+// src/types/order.ts
 
 export type ApiResponse<T> = {
   success?: boolean;
@@ -36,78 +27,13 @@ export interface OrderListItem {
   orderCode: string;
   totalAmount: number;
   status: OrderStatus;
+  paymentMethod?: PaymentMethod;
   paymentStatus?: PaymentStatus;
   shippingCarrierCode?: string;
   failReason?: string | null;
   createdAt?: string;
 }
 
-// export interface ShippingInfo {
-//   fullName: string;
-//   address: string;
-//   phoneNumber: string;
-//   email: string;
-//   note?: string;
-// }
-
-// export interface OrderProductLine {
-//   productId: string;
-//   quantity: number;
-//   price: number;
-//   _id?: string;
-// }
-
-// export interface PaymentInfo {
-//   method?: string;
-//   paymentDate?: string;
-//   paymentStatus?: PaymentStatus;
-//   imageCheckPayment?: string;
-// }
-
-// export interface OrderDetail {
-//   _id: string;
-//   orderCode: string;
-//   shippingInfo: ShippingInfo;
-//   products: OrderProductLine[];
-//   totalAmount: number;
-//   shippingCarrier?: string;
-//   status: OrderStatus;
-//   payment?: PaymentInfo;
-//   failReason?: string | null;
-//   createdAt?: string;
-//   updatedAt?: string;
-// }
-
-// //client
-// export type OrderCreatePayload = {
-//   shippingInfo: {
-//     fullName: string;
-//     address: string;
-//     phoneNumber: string;
-//     email: string;
-//     note?: string;
-//   };
-//   products: Array<{
-//     productId: string;
-//     quantity: number;
-//     price: number; // theo API của bạn
-//   }>;
-//   payment: {
-//     method: "cod" | "bank_transfer";
-//     imageCheckPayment?: string; // required nếu bank_transfer
-//   };
-//   shippingCarrier: string; // code or id tuỳ backend bạn dùng
-// };
-
-// export type OrderCreateResponse = {
-//   // backend bạn chưa đưa response mẫu => tạm để unknown fields
-//   // bạn có thể bổ sung sau: orderCode, totalPrice, status...
-//   [key: string]: any;
-// };
-
-// src/types/order.ts
-
-// src/types/order.ts
 export type OrderStatus =
   | "pending"
   | "confirmed"
@@ -117,6 +43,8 @@ export type OrderStatus =
   | "failed";
 
 export type PaymentStatus = "pending" | "paid" | "failed";
+
+export type PaymentMethod = "cod" | "bank_transfer";
 
 export interface ShippingInfo {
   fullName: string;
