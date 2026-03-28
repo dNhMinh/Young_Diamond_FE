@@ -75,69 +75,6 @@ export default function HomePage() {
 
         setBanners(bannerData);
 
-        //       setFeatured(feat.data || []);
-
-        //       // map ProductDetail -> ProductCardDTO
-        //       // const mappedNew: ProductCardDTO[] = newProductsData.map(
-        //       //   (p: ProductDetailWithMeta): ProductCardDTO => ({
-        //       //     _id: p._id,
-        //       //     title: p.title,
-        //       //     price: p.price,
-        //       //     discount: p.discount,
-        //       //     slug: p.slug,
-        //       //     image: p.images?.[0] || "",
-        //       //   }),
-        //       // );
-        //       // setNewProducts(mappedNew);
-
-        //       const mappedNew: ProductCardDTO[] = [...newProductsData]
-        //         .sort((a, b) => {
-        //           const posA =
-        //             typeof a.position === "number"
-        //               ? a.position
-        //               : Number.MAX_SAFE_INTEGER;
-        //           const posB =
-        //             typeof b.position === "number"
-        //               ? b.position
-        //               : Number.MAX_SAFE_INTEGER;
-
-        //           return posA - posB;
-        //         })
-        //         .map(
-        //           (p: ProductDetailWithMeta): ProductCardDTO => ({
-        //             _id: p._id,
-        //             title: p.title,
-        //             price: p.price,
-        //             discount: p.discount,
-        //             slug: p.slug,
-        //             thumbnail:
-        //               p.thumbnail ||
-        //               p.images?.[0] ||
-        //               p.variant?.[0]?.images?.[0] ||
-        //               "",
-        //           }),
-        //         );
-
-        //       setNewProducts(mappedNew);
-
-        //       setReviews(rv.data || []);
-        //     } catch (err) {
-        //       // bạn có thể add toast sau
-        //       console.error(err);
-        //     } finally {
-        //       if (alive) setLoading(false);
-        //     }
-        //   };
-
-        //   run();
-        //   return () => {
-        //     alive = false;
-        //   };
-        // }, []);
-
-        // FEATURED:
-        // FE chỉ sort được nếu API có position.
-        // Nếu chưa có position thì giữ nguyên thứ tự backend trả về.
         const mappedFeatured: ProductCardDTO[] = [...(feat.data || [])]
           .sort((a, b) => {
             const posA =

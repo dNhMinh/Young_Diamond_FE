@@ -1,64 +1,5 @@
 // //src/components/admin/modals/ProductFormModal.tsx
-// import { useEffect, useMemo, useState } from "react";
-// import AdminModal from "./AdminModal";
-// import { uploadToCloudinary } from "../../../utils/cloudinary";
-// import {
-//   getAdminProductCategoriesApi,
-//   type ProductCategoryListItem,
-// } from "../../../api/admin/productCategory.api";
-
-// export type ProductStatus = "active" | "inactive" | "out_of_stock";
-
-// export type SizeItem = {
-//   freeSize: boolean;
-//   size: string;
-//   type: string;
-// };
-
-// export type ProductFormValues = {
-//   title: string;
-//   description: string;
-//   price: number;
-//   product_category_id: string;
-//   images: string[];
-//   stock: number;
-//   discount: number;
-//   status: ProductStatus;
-//   color: string[];
-//   size: SizeItem[];
-// };
-
-// type NumberInput = number | "";
-
-// type ProductDraft = Omit<
-//   ProductFormValues,
-//   "images" | "color" | "price" | "stock" | "discount"
-// > & {
-//   price: NumberInput;
-//   stock: NumberInput;
-//   discount: NumberInput;
-// };
-
-// type Props = {
-//   open: boolean;
-//   mode: "create" | "edit";
-//   initialValues?: Partial<ProductFormValues>;
-//   onClose: () => void;
-//   onSubmit: (values: ProductFormValues) => Promise<void> | void;
-//   submitting?: boolean;
-// };
-
-// const emptyDraft: ProductDraft = {
-//   title: "",
-//   description: "",
-//   price: "",
-//   product_category_id: "",
-//   stock: "",
-//   discount: "",
-//   status: "active",
-//   size: [{ freeSize: false, size: "M", type: "standard" }],
-// };
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import AdminModal from "./AdminModal";
 import { uploadToCloudinary } from "../../../utils/cloudinary";
 import {
@@ -140,13 +81,6 @@ function parseLinesOrComma(input: string) {
     .filter(Boolean);
 }
 
-function parseComma(input: string) {
-  return input
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
 function toNumberInput(v: string): number | "" {
   if (v.trim() === "") return "";
   const n = Number(v);
@@ -167,51 +101,12 @@ export default function ProductFormModal({
 }: Props) {
   const [draft, setDraft] = useState<ProductDraft>(emptyDraft);
 
-  // text source of truth
-  const [imagesText, setImagesText] = useState("");
-  const [colorsText, setColorsText] = useState("");
-
   // upload
   const [uploading, setUploading] = useState(false);
 
   // categories
   const [categories, setCategories] = useState<ProductCategoryListItem[]>([]);
   const [catLoading, setCatLoading] = useState(false);
-
-  const parsedImages = useMemo(
-    () => parseLinesOrComma(imagesText),
-    [imagesText],
-  );
-
-  const parsedColors = useMemo(() => parseComma(colorsText), [colorsText]);
-
-  // reset khi mở modal
-  // useEffect(() => {
-  //   if (!open) return;
-
-  //   const merged: ProductDraft = {
-  //     ...emptyDraft,
-  //     ...initialValues,
-  //     price:
-  //       initialValues?.price === undefined || initialValues?.price === null
-  //         ? ""
-  //         : initialValues.price,
-  //     stock:
-  //       initialValues?.stock === undefined || initialValues?.stock === null
-  //         ? ""
-  //         : initialValues.stock,
-  //     discount:
-  //       initialValues?.discount === undefined ||
-  //       initialValues?.discount === null
-  //         ? ""
-  //         : initialValues.discount,
-  //     size: (initialValues?.size as SizeItem[]) ?? emptyDraft.size,
-  //   };
-
-  //   setDraft(merged);
-  //   setImagesText((initialValues?.images ?? []).join("\n"));
-  //   setColorsText((initialValues?.color ?? []).join(", "));
-  // }, [open, initialValues]);
 
   useEffect(() => {
     if (!open) return;
@@ -273,32 +168,6 @@ export default function ProductFormModal({
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
-
-  const handleUploadFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-
-    setUploading(true);
-    try {
-      const fileArr = Array.from(files);
-
-      // upload tuần tự cho chắc (đỡ rate-limit)
-      const uploadedUrls: string[] = [];
-      for (const f of fileArr) {
-        const res = await uploadToCloudinary(f);
-        uploadedUrls.push(res.secure_url);
-      }
-
-      const next = [...parsedImages, ...uploadedUrls];
-      setImagesText(next.join("\n"));
-    } catch (e) {
-      console.error(e);
-      alert(
-        "Upload ảnh thất bại (Cloudinary). Kiểm tra preset/cloud name hoặc quyền upload.",
-      );
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleUploadThumbnail = async (file: File | null) => {
     if (!file) return;
@@ -380,11 +249,6 @@ export default function ProductFormModal({
     updateVariant(idx, { imagesText: next.join("\n") });
   };
 
-  const removeImage = (url: string) => {
-    const next = parsedImages.filter((x) => x !== url);
-    setImagesText(next.join("\n"));
-  };
-
   const updateSize = (idx: number, patch: Partial<SizeItem>) => {
     setDraft((p) => ({
       ...p,
@@ -407,31 +271,6 @@ export default function ProductFormModal({
       size: [...(p.size || []), { freeSize: false, size: "", type: "" }],
     }));
   };
-
-  // const submit = async () => {
-  //   const payload: ProductFormValues = {
-  //     ...draft,
-  //     price: toNumberOrZero(draft.price),
-  //     stock: toNumberOrZero(draft.stock),
-  //     discount: toNumberOrZero(draft.discount),
-  //     images: parsedImages,
-  //     color: parsedColors,
-  //   };
-
-  //   if (!payload.title.trim()) return alert("Vui lòng nhập title");
-  //   if (!payload.description.trim()) return alert("Vui lòng nhập description");
-  //   if (!payload.product_category_id.trim())
-  //     return alert("Vui lòng chọn danh mục sản phẩm");
-  //   if (payload.price <= 0) return alert("Price không hợp lệ");
-  //   if (payload.stock < 0) return alert("Stock không hợp lệ");
-
-  //   if (!payload.images.length) return alert("Vui lòng có ít nhất 1 ảnh");
-
-  //   // bạn có thể lọc size rỗng nếu muốn:
-  //   // payload.size = payload.size.filter(s => s.freeSize || (s.size.trim() && s.type.trim()));
-
-  //   await onSubmit(payload);
-  // };
 
   const submit = async () => {
     const payload: ProductFormValues = {
@@ -551,16 +390,6 @@ export default function ProductFormModal({
           }
         />
 
-        {/* <input
-          type="number"
-          className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
-          placeholder="Stock (VD: 10)"
-          value={draft.stock}
-          onChange={(e) =>
-            setDraft((p) => ({ ...p, stock: toNumberInput(e.target.value) }))
-          }
-        /> */}
-
         <input
           type="number"
           className="rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
@@ -591,53 +420,6 @@ export default function ProductFormModal({
           }
           rows={3}
         />
-
-        {/* Images */}
-        {/* <div className="md:col-span-2 rounded-xl border border-white/10 p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="text-sm font-medium text-gray-200">
-              Images ({parsedImages.length})
-            </div>
-
-            <label className="cursor-pointer rounded-lg border border-white/15 px-3 py-1 text-sm hover:bg-white/10">
-              Upload to Cloudinary
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                disabled={uploading}
-                onChange={(e) => handleUploadFiles(e.target.files)}
-              />
-            </label>
-          </div>
-
-          <textarea
-            className="w-full rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
-            placeholder="Paste URL ảnh (mỗi dòng 1 URL hoặc phân tách bằng dấu phẩy)"
-            value={imagesText}
-            onChange={(e) => setImagesText(e.target.value)}
-            rows={3}
-          />
-
-          {parsedImages.length > 0 && (
-            <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
-              {parsedImages.map((url) => (
-                <div
-                  key={url}
-                  className="relative overflow-hidden rounded-lg border border-white/10">
-                  <img src={url} className="h-24 w-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(url)}
-                    className="absolute right-2 top-2 rounded bg-black/70 px-2 py-1 text-xs text-white hover:bg-black">
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div> */}
 
         <div className="md:col-span-2 rounded-xl border border-white/10 p-3">
           <div className="mb-2 flex items-center justify-between">
@@ -676,70 +458,6 @@ export default function ProductFormModal({
             </div>
           ) : null}
         </div>
-
-        {/* Colors */}
-        {/* <input
-          className="md:col-span-2 rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
-          placeholder="Colors (phân tách bằng dấu phẩy) ví dụ: vàng, bạc"
-          value={colorsText}
-          onChange={(e) => setColorsText(e.target.value)}
-        /> */}
-
-        {/* Sizes */}
-        {/* <div className="md:col-span-2 rounded-xl border border-white/10 p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="text-sm font-medium text-gray-200">Size</div>
-            <button
-              type="button"
-              onClick={addSize}
-              className="rounded-lg border border-white/15 px-3 py-1 text-sm hover:bg-white/10"
-            >
-              + Add size
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            {(draft.size || []).map((s, idx) => (
-              <div
-                key={idx}
-                className="flex flex-wrap items-center gap-2 rounded-lg bg-white/5 p-2"
-              >
-                <label className="flex items-center gap-2 text-xs text-gray-200">
-                  <input
-                    type="checkbox"
-                    checked={s.freeSize}
-                    onChange={(e) =>
-                      updateSize(idx, { freeSize: e.target.checked })
-                    }
-                  />
-                  freeSize
-                </label>
-
-                <input
-                  className="flex-1 rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
-                  placeholder="size (M/L/S...)"
-                  value={s.size}
-                  onChange={(e) => updateSize(idx, { size: e.target.value })}
-                />
-
-                <input
-                  className="flex-1 rounded-lg border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-white/30"
-                  placeholder="type (standard...)"
-                  value={s.type}
-                  onChange={(e) => updateSize(idx, { type: e.target.value })}
-                />
-
-                <button
-                  type="button"
-                  onClick={() => removeSize(idx)}
-                  className="rounded-lg border border-white/15 px-3 py-1 text-sm text-red-300 hover:bg-white/10"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
-        </div> */}
 
         <div className="md:col-span-2 rounded-xl border border-white/10 p-3">
           <div className="mb-2 flex items-center justify-between">

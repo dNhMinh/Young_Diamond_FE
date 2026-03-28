@@ -21,9 +21,6 @@ type ProductStatusFilter = "all" | "active" | "inactive" | "out_of_stock";
 /** ===== helpers: build diff payload (only changed fields) ===== */
 const trim = (s: unknown) => (typeof s === "string" ? s.trim() : s);
 
-const normalizeStringArray = (arr?: string[]) =>
-  (arr ?? []).map((x) => String(x).trim()).filter(Boolean);
-
 const normalizeSizeArray = (arr?: SizeItem[]) =>
   (arr ?? []).map((s) => ({
     freeSize: Boolean(s.freeSize),
@@ -40,53 +37,6 @@ const normalizeVariantArray = (arr?: VariantItem[]) =>
 
 const deepEqual = (a: unknown, b: unknown) =>
   JSON.stringify(a) === JSON.stringify(b);
-
-/**
- * Create diff payload between initial and current.
- * Return Partial payload compatible with backend update.
- */
-// function buildProductDiff(
-//   initial: ProductFormValues,
-//   current: ProductFormValues,
-// ): UpdateProductPayload {
-//   const diff: UpdateProductPayload = {};
-
-//   // primitive fields
-//   if (trim(current.title) !== trim(initial.title)) diff.title = current.title;
-//   if (trim(current.description) !== trim(initial.description))
-//     diff.description = current.description;
-
-//   if (Number(current.price) !== Number(initial.price))
-//     diff.price = current.price;
-//   if (Number(current.stock) !== Number(initial.stock))
-//     diff.stock = current.stock;
-
-//   // discount: treat as number, allow 0
-//   if (Number(current.discount ?? 0) !== Number(initial.discount ?? 0))
-//     diff.discount = current.discount ?? 0;
-
-//   // status
-//   if (current.status !== initial.status) diff.status = current.status;
-
-//   // category
-//   if (current.product_category_id !== initial.product_category_id)
-//     diff.product_category_id = current.product_category_id;
-
-//   // arrays
-//   const curImages = normalizeStringArray(current.images);
-//   const initImages = normalizeStringArray(initial.images);
-//   if (!deepEqual(curImages, initImages)) diff.images = curImages;
-
-//   const curColors = normalizeStringArray(current.color);
-//   const initColors = normalizeStringArray(initial.color);
-//   if (!deepEqual(curColors, initColors)) diff.color = curColors;
-
-//   const curSize = normalizeSizeArray(current.size);
-//   const initSize = normalizeSizeArray(initial.size);
-//   if (!deepEqual(curSize, initSize)) diff.size = curSize;
-
-//   return diff;
-// }
 
 function buildProductDiff(
   initial: ProductFormValues,
@@ -201,27 +151,6 @@ export default function AdminProducts() {
     try {
       const res = await getProductDetailApi(slug);
       const p = res.data.data;
-
-      // const mappedSize: SizeItem[] = (p.size ?? []).map((s) => ({
-      //   freeSize: Boolean(s.freeSize),
-      //   size: s.size ?? "",
-      //   type: s.type ?? "",
-      // }));
-
-      // const full: ProductFormValues = {
-      //   title: p.title ?? "",
-      //   description: p.description ?? "",
-      //   price: Number(p.price ?? 0),
-      //   product_category_id: p.product_category_id ?? "",
-      //   images: p.images ?? [],
-      //   stock: Number(p.stock ?? 0),
-      //   discount: Number(p.discount ?? 0),
-      //   status: p.status,
-      //   color: p.color ?? [],
-      //   size: mappedSize.length
-      //     ? mappedSize
-      //     : [{ freeSize: false, size: "M", type: "standard" }],
-      // };
 
       const mappedSize: SizeItem[] = (p.size ?? []).map((s) => ({
         freeSize: Boolean(s.freeSize),
