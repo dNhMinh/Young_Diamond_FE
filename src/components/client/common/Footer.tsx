@@ -1,15 +1,20 @@
 //src/components/client/common/Footer.tsx
 import { Link } from "react-router-dom";
-import logoImg from "../../../assets/YDlogo.jpg"; // ✅ giống Header
+import logoImg from "../../../assets/YDlogo.jpg";
 
-// ✅ Đổi các link này theo page của bạn
 const SOCIAL_LINKS = {
   facebook: "https://www.facebook.com/YoungDiamonddd",
   instagram: "https://www.instagram.com/youngdiamond.jewels/",
   tiktok: "https://www.tiktok.com/@youngdiamonddd",
 } as const;
 
-const AGENT_ROUTE = "/agent-request"; // ✅ đổi nếu route bạn khác
+const AGENT_ROUTE = "/agent-request";
+const SUPPORT_EMAIL = "youngdiamond.jewels@gmail.com";
+const DESIGNER_EMAIL = "dnminh1401@gmail.com";
+
+function buildGmailComposeLink(email: string) {
+  return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}`;
+}
 
 function SocialIconButton({
   href,
@@ -37,8 +42,7 @@ function SocialIconButton({
         focus:outline-none focus:ring-2 focus:ring-white/30
       "
       aria-label={label}
-      title={label}
-    >
+      title={label}>
       <span className="text-white/90 group-hover:text-white transition">
         {children}
       </span>
@@ -54,11 +58,8 @@ export default function Footer() {
   return (
     <footer className="border-t border-white/10 bg-black">
       <div className="max-w-7xl mx-auto px-4 py-12">
-        {/* ✅ 4 khối */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          {/* 1) Brand: chỉ logo + slogan */}
           <div>
-            {/* ✅ Wrap để slogan căn giữa theo logo */}
             <div className="inline-flex flex-col items-center">
               <img
                 src={logoImg}
@@ -73,7 +74,6 @@ export default function Footer() {
                 draggable={false}
               />
 
-              {/* ✅ Slogan: giữ nguyên nội dung, căn giữa theo logo */}
               <p
                 className="
         mt-3
@@ -83,17 +83,26 @@ export default function Footer() {
         text-neutral-400/90
         leading-relaxed
         text-center
-      "
-              >
+      ">
                 Dare to shine
               </p>
+              <p
+                className="
+        mt-2
+        text-[12px] md:text-[11px]
+        tracking-[0.22em]
+        uppercase
+        text-neutral-500/80
+        leading-relaxed
+        text-center
+      ">
+                Best Choice For Playboy
+              </p>
 
-              {/* line nhỏ căn giữa */}
               <div className="mt-2 h-px w-10 bg-white/10" aria-hidden />
             </div>
           </div>
 
-          {/* 2) Shop (giữ nguyên) */}
           <div>
             <div className="text-xs tracking-[0.2em] uppercase text-white font-semibold">
               Shop
@@ -122,7 +131,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* 3) Support (giữ nguyên) */}
           <div>
             <div className="text-xs tracking-[0.2em] uppercase text-white font-semibold">
               Support
@@ -133,10 +141,20 @@ export default function Footer() {
                   Đăng ký đại lý
                 </Link>
               </li>
+              <li>
+                <a
+                  // href={`mailto:${SUPPORT_EMAIL}`}
+                  href={buildGmailComposeLink(SUPPORT_EMAIL)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-white transition"
+                  aria-label="Email Young Diamond support">
+                  Liên hệ: {SUPPORT_EMAIL}
+                </a>
+              </li>
             </ul>
           </div>
 
-          {/* 4) Social */}
           <div>
             <div className="text-xs tracking-[0.2em] uppercase text-white font-semibold">
               Social
@@ -149,8 +167,7 @@ export default function Footer() {
                   height="18"
                   viewBox="0 0 24 24"
                   fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
+                  xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M14 8.5V7.3c0-.8.5-1.3 1.4-1.3H17V3h-2.1C12.6 3 11 4.5 11 7.2v1.3H9v3h2V21h3v-9.5h2.5l.5-3H14Z"
                     fill="currentColor"
@@ -164,8 +181,7 @@ export default function Footer() {
                   height="18"
                   viewBox="0 0 24 24"
                   fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
+                  xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Z"
                     stroke="currentColor"
@@ -191,8 +207,7 @@ export default function Footer() {
                   height="18"
                   viewBox="0 0 24 24"
                   fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
+                  xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M14 3v11.2a3.6 3.6 0 1 1-3-3.54V7.6a7 7 0 1 0 6.5 6.98V8.2c1.2 1.1 2.8 1.8 4.5 1.9V6.9c-2.3-.2-4.2-1.8-5-3.9H14Z"
                     fill="currentColor"
@@ -209,17 +224,9 @@ export default function Footer() {
           <div className="text-sm text-neutral-500">
             © {copyrightYear} Young Diamond. All rights reserved.
           </div>
-          <div className="text-sm text-neutral-500 flex items-center gap-4">
-            <Link to="/policy" className="hover:text-white">
-              Privacy
-            </Link>
-            <Link to="/terms" className="hover:text-white">
-              Terms
-            </Link>
-          </div>
+          <div className="text-sm text-neutral-500 flex items-center gap-4"></div>
         </div>
 
-        {/* ✅ Hàng 2: credit gọn 1 cụm, không tách 2 đầu */}
         <div className="mt-3 pt-3 border-t border-white/10">
           <div className="flex flex-col md:flex-row md:items-center md:justify-center gap-1 md:gap-3 text-xs text-neutral-600">
             <span>
@@ -228,11 +235,12 @@ export default function Footer() {
             </span>
             <span className="hidden md:inline text-neutral-700/60">•</span>
             <a
-              href="mailto:dnminh141@gmail.com"
+              href={buildGmailComposeLink(DESIGNER_EMAIL)}
+              target="_blank"
+              rel="noreferrer"
               className="hover:text-white transition"
-              aria-label="Contact designer"
-            >
-              Contact: dnminh1401@gmail.com
+              aria-label="Contact designer">
+              Contact: {DESIGNER_EMAIL}
             </a>
           </div>
         </div>
