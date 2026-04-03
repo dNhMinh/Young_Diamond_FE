@@ -121,12 +121,12 @@ export default function ProductGallery({ images, title }: Props) {
               <div
                 className="rounded-full border border-black/20 shadow-[0_10px_40px_rgba(0,0,0,0.18)]"
                 style={{
-                  width: 260,
-                  height: 260,
+                  width: 320,
+                  height: 320,
                   backgroundImage: `url(${activeSrc})`,
                   backgroundRepeat: "no-repeat",
                   // zoom level:
-                  backgroundSize: "240%",
+                  backgroundSize: "400%",
                   backgroundPosition: `${lens.px}% ${lens.py}%`,
                 }}
               />

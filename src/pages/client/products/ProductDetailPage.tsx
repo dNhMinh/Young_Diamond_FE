@@ -510,8 +510,13 @@ export default function ProductDetailPage() {
               </div>
 
               <ul className="mt-4 space-y-2 text-sm text-neutral-700">
-                {product.description ? (
+                {/* {product.description ? (
                   <li className="leading-relaxed">{product.description}</li>
+                ) : null} */}
+                {product.description ? (
+                  <li className="leading-relaxed whitespace-pre-line break-words">
+                    {product.description}
+                  </li>
                 ) : null}
 
                 <li className="leading-relaxed">
