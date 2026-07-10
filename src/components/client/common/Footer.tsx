@@ -5,7 +5,7 @@ import logoImg from "../../../assets/YDlogo.jpg";
 const SOCIAL_LINKS = {
   facebook: "https://www.facebook.com/YoungDiamonddd",
   instagram: "https://www.instagram.com/youngdiamond.jewels/",
-  tiktok: "https://www.tiktok.com/@youngdiamonddd",
+  tiktok: "https://www.tiktok.com/@youngstadium",
 } as const;
 
 const AGENT_ROUTE = "/agent-request";
