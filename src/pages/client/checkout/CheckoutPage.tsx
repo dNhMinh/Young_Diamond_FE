@@ -156,19 +156,52 @@ export default function CheckoutPage() {
     return state.items.some((it) => !it.sizeLabel?.trim());
   }, [state.items]);
 
+  const isPhoneValid = useMemo(() => {
+    return /^\d{10}$/.test(phoneNumber);
+  }, [phoneNumber]);
+
+  // const canSubmit = useMemo(() => {
+  //   if (state.items.length === 0) return false;
+  //   if (
+  //     !fullName.trim() ||
+  //     !address.trim() ||
+  //     !phoneNumber.trim() ||
+  //     !email.trim()
+  //   )
+  //     return false;
+
+  //   if (hasMissingColor) return false;
+  //   if (hasMissingSize) return false;
+  //   //chuyển khoản bắt buộc có ảnh chứng từ
+  //   if (method === "bank_transfer" && !proofUrl) return false;
+
+  //   return true;
+  // }, [
+  //   state.items.length,
+  //   fullName,
+  //   address,
+  //   phoneNumber,
+  //   email,
+  //   hasMissingColor,
+  //   hasMissingSize,
+  //   method,
+  //   proofUrl,
+  // ]);
+
   const canSubmit = useMemo(() => {
     if (state.items.length === 0) return false;
-    if (
-      !fullName.trim() ||
-      !address.trim() ||
-      !phoneNumber.trim() ||
-      !email.trim()
-    )
+
+    if (!fullName.trim() || !address.trim() || !email.trim()) {
       return false;
+    }
+
+    // ✅ bắt buộc SĐT đúng 10 chữ số
+    if (!isPhoneValid) return false;
 
     if (hasMissingColor) return false;
     if (hasMissingSize) return false;
-    //chuyển khoản bắt buộc có ảnh chứng từ
+
+    // chuyển khoản bắt buộc có ảnh chứng từ
     if (method === "bank_transfer" && !proofUrl) return false;
 
     return true;
@@ -176,8 +209,8 @@ export default function CheckoutPage() {
     state.items.length,
     fullName,
     address,
-    phoneNumber,
     email,
+    isPhoneValid,
     hasMissingColor,
     hasMissingSize,
     method,
@@ -239,6 +272,11 @@ export default function CheckoutPage() {
   };
 
   const onPlaceOrder = async () => {
+    if (!isPhoneValid) {
+      setErrMsg("Vui lòng nhập số điện thoại gồm đúng 10 chữ số.");
+      return;
+    }
+
     if (hasMissingColor) {
       setErrMsg(
         "Có sản phẩm chưa chọn màu. Vui lòng quay lại giỏ hàng để kiểm tra.",
@@ -349,12 +387,41 @@ export default function CheckoutPage() {
                   />
                 </label>
 
-                <label className="grid gap-2">
+                {/* <label className="grid gap-2">
                   <span className="text-xs text-neutral-600">SĐT</span>
                   <input
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     className="h-11 px-3 rounded-lg border border-black/15 outline-none focus:border-black"
+                  />
+                </label> */}
+
+                <label className="grid gap-2">
+                  <span className="text-xs text-neutral-600">
+                    SĐT <span className="text-red-500">*</span>
+                  </span>
+
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    maxLength={10}
+                    value={phoneNumber}
+                    onChange={(e) => {
+                      const value = e.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 10);
+
+                      setPhoneNumber(value);
+                      setErrMsg(null);
+                    }}
+                    placeholder="Nhập chính xác số điện thoại"
+                    className={[
+                      "h-11 px-3 rounded-lg border outline-none transition",
+                      phoneNumber.length > 0 && !isPhoneValid
+                        ? "border-red-400 focus:border-red-500"
+                        : "border-black/15 focus:border-black",
+                    ].join(" ")}
                   />
                 </label>
 
