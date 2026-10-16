@@ -2,7 +2,11 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Socket } from "socket.io-client";
 import { createSocket } from "../../../utils/socket";
 import { getMessages, getOrCreateRoom } from "../../../api/client/chat.api";
-import type { ChatMessage, ChatRoom } from "../../../types/chat";
+import {
+  mergeChatMessages,
+  type ChatMessage,
+  type ChatRoom,
+} from "../../../types/chat";
 
 const formatTime = (iso?: string) => {
   if (!iso) return "";
@@ -33,7 +37,7 @@ export default function ChatPage() {
         const msgRes = await getMessages(roomData._id);
         if (!isMounted) return;
 
-        setMessages(msgRes.data);
+        setMessages((current) => mergeChatMessages(current, msgRes.data));
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -54,11 +58,16 @@ export default function ChatPage() {
 
     socket.on("connect", () => {
       socket.emit("join_room", room._id);
+      getMessages(room._id)
+        .then((res) =>
+          setMessages((current) => mergeChatMessages(current, res.data)),
+        )
+        .catch(() => {});
     });
 
     socket.on("new_message", (message: ChatMessage) => {
       if (message.roomId !== room._id) return;
-      setMessages((prev) => [...prev, message]);
+      setMessages((prev) => mergeChatMessages(prev, [message]));
     });
 
     return () => {

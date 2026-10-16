@@ -431,7 +431,8 @@ export default function AdminChatPage() {
                   : room.unreadByAdmin > 0
                     ? "border-red-500/80 bg-red-500/5 hover:border-red-400"
                     : "border-white/5 bg-white/5 hover:border-white/20"
-              }`}>
+              }`}
+            >
               {(() => {
                 const lastMessage = lastMessageMap[room._id];
                 const preview = lastMessage
@@ -481,7 +482,8 @@ export default function AdminChatPage() {
 
         <div
           ref={messagesContainerRef}
-          className="mt-4 flex max-h-[480px] min-h-[420px] flex-col gap-3 overflow-y-auto rounded-lg border border-white/5 bg-[#111111] p-4">
+          className="mt-4 flex max-h-[480px] min-h-[420px] flex-col gap-3 overflow-y-auto rounded-lg border border-white/5 bg-[#111111] p-4"
+        >
           {!selectedRoomId && (
             <div className="text-xs text-gray-400">
               Chọn phòng để xem tin nhắn.
@@ -500,14 +502,16 @@ export default function AdminChatPage() {
                   guest: "justify-start",
                   admin: "justify-end",
                 }[message.sender]
-              }`}>
+              }`}
+            >
               <div
                 className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm shadow-sm ${
                   {
                     guest: "bg-white text-gray-900",
                     admin: "bg-blue-600 text-white",
                   }[message.sender]
-                }`}>
+                }`}
+              >
                 <div>{message.content}</div>
                 <div
                   className={`mt-1 text-[11px] opacity-70 ${
@@ -515,7 +519,8 @@ export default function AdminChatPage() {
                       guest: "text-gray-500",
                       admin: "text-blue-100",
                     }[message.sender]
-                  }`}>
+                  }`}
+                >
                   {formatTime(message.createdAt)}
                 </div>
               </div>
@@ -531,14 +536,16 @@ export default function AdminChatPage() {
               onClick={() => setShowPicker((prev) => !prev)}
               disabled={!selectedRoomId}
               className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-[#0b0b0b] text-lg text-white transition hover:border-white/20 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
-              title="Emoji">
+              title="Emoji"
+            >
               🙂
             </button>
 
             {showPicker && selectedRoomId ? (
               <div
                 ref={pickerRef}
-                className="absolute bottom-12 left-0 z-20 w-[300px] rounded-xl border border-white/10 bg-[#111111] p-3 shadow-xl">
+                className="absolute bottom-12 left-0 z-20 w-[300px] rounded-xl border border-white/10 bg-[#111111] p-3 shadow-xl"
+              >
                 <div className="mb-3 text-xs font-medium text-gray-300">
                   Emoji
                 </div>
@@ -549,7 +556,8 @@ export default function AdminChatPage() {
                       key={emoji}
                       type="button"
                       onClick={() => handleInsertQuickItem(emoji)}
-                      className="flex h-10 w-10 items-center justify-center rounded-lg text-xl transition hover:bg-white/10">
+                      className="flex h-10 w-10 items-center justify-center rounded-lg text-xl transition hover:bg-white/10"
+                    >
                       {emoji}
                     </button>
                   ))}
@@ -570,7 +578,8 @@ export default function AdminChatPage() {
           <button
             type="submit"
             disabled={!selectedRoomId}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
             Gửi
           </button>
         </form>

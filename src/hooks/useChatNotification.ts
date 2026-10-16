@@ -13,6 +13,7 @@ import type { Socket } from "socket.io-client";
 import { createSocket } from "../utils/socket";
 import { getAdminRooms } from "../api/admin/chat.api";
 import type { ChatMessage } from "../types/chat";
+import { useAppSelector } from "../app/hooks";
 const playNewMessageSound = () => {
   try {
     const AudioContextClass =
@@ -81,6 +82,7 @@ export function ChatNotificationProvider({
 }: {
   children: ReactNode;
 }) {
+  const token = useAppSelector((state) => state.adminAuth.token);
   const socketRef = useRef<Socket | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [orderUnreadCount, setOrderUnreadCount] = useState(0);
@@ -108,7 +110,6 @@ export function ChatNotificationProvider({
 
     const loadUnreadCount = async () => {
       try {
-        const token = localStorage.getItem("admin_token");
         if (!token) return;
 
         const res = await getAdminRooms();
@@ -131,10 +132,9 @@ export function ChatNotificationProvider({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [token]);
 
   useEffect(() => {
-    const token = localStorage.getItem("admin_token");
     if (!token) return;
 
     const socket = createSocket();
@@ -192,7 +192,7 @@ export function ChatNotificationProvider({
       socket.disconnect();
       socketRef.current = null;
     };
-  }, []);
+  }, [token]);
 
   const markRoomRead = useCallback((roomId: string) => {
     if (!unreadRoomsRef.current.has(roomId)) return;

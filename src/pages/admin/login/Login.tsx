@@ -15,8 +15,8 @@ export default function AdminLogin() {
       const res = await adminLoginApi({ username, password });
       dispatch(
         loginSuccess({
-          user: res.data.data.user,
-          token: res.data.data.token,
+          user: res.data.user,
+          token: res.data.token,
         }),
       );
       navigate("/admin/dashboard");

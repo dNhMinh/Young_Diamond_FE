@@ -5,8 +5,19 @@ import type {
   LoginResponse,
 } from "../../features/admin/auth/auth.types";
 
-export const adminLoginApi = (data: LoginRequest) => {
-  return baseApi.post<LoginResponse>("/admin/users/login", data);
+export const adminLoginApi = async (data: LoginRequest) => {
+  console.log("Sending login request with data:", data);
+  try {
+    const response = await baseApi.post<LoginResponse>(
+      "/admin/users/login",
+      data,
+    );
+    console.log("Login response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Login error:", error);
+    throw error;
+  }
 };
 
 export const changeAdminPasswordApi = (data: ChangePasswordRequest) => {
@@ -14,4 +25,9 @@ export const changeAdminPasswordApi = (data: ChangePasswordRequest) => {
     "/admin/users/change-password",
     data,
   );
+};
+
+export const adminLogoutApi = () => {
+  console.log("Sending logout request");
+  return baseApi.post<{ message: string }>("/admin/auth/logout");
 };

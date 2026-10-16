@@ -4,11 +4,13 @@ import type { AdminUser } from "./auth.types";
 interface AuthState {
   user: AdminUser | null;
   token: string | null;
+  isInitialized: boolean;
 }
 
 const initialState: AuthState = {
   user: null,
   token: localStorage.getItem("admin_token"),
+  isInitialized: false,
 };
 
 const authSlice = createSlice({
@@ -21,15 +23,20 @@ const authSlice = createSlice({
     ) {
       state.user = action.payload.user;
       state.token = action.payload.token;
-      localStorage.setItem("admin_token", action.payload.token);
+    },
+    refreshToken(state, action: PayloadAction<string>) {
+      state.token = action.payload;
     },
     logout(state) {
       state.user = null;
       state.token = null;
-      localStorage.removeItem("admin_token");
+    },
+    initializeApp(state) {
+      state.isInitialized = true;
     },
   },
 });
 
-export const { loginSuccess, logout } = authSlice.actions;
+export const { loginSuccess, refreshToken, logout, initializeApp } =
+  authSlice.actions;
 export default authSlice.reducer;

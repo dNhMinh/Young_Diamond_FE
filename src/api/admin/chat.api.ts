@@ -1,10 +1,10 @@
-import { httpAdmin } from "../http";
 import type { ChatRoom } from "../../types/chat";
+import baseApi from "../baseApi";
 
 export const getAdminRooms = (status?: string) =>
-  httpAdmin.get<ChatRoom[]>("/admin/chat/rooms", {
+  baseApi.get<ChatRoom[]>("/admin/chat/rooms", {
     params: status ? { status } : undefined,
   });
 
 export const closeRoom = (roomId: string) =>
-  httpAdmin.patch<ChatRoom>(`/admin/chat/rooms/${roomId}/close`);
+  baseApi.patch<ChatRoom>(`/admin/chat/rooms/${roomId}/close`);

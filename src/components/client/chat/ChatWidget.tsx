@@ -193,11 +193,15 @@
 
 
 //src/components/client/chat/ChatWidget.tsx
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { Socket } from "socket.io-client";
 import { createSocket } from "../../../utils/socket";
 import { getMessages, getOrCreateRoom } from "../../../api/client/chat.api";
-import type { ChatMessage, ChatRoom } from "../../../types/chat";
+import {
+  mergeChatMessages,
+  type ChatMessage,
+  type ChatRoom,
+} from "../../../types/chat";
 
 // ✅ icon bạn muốn dùng
 import chatIconImg from "../../../assets/chat-icon-YD.png";
@@ -210,14 +214,88 @@ const formatTime = (iso?: string) => {
   });
 };
 
+const lastSeenMessageKey = (roomId: string) => `chatLastSeenMessage:${roomId}`;
+
 export default function ChatWidget() {
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const isOpenRef = useRef(false);
+  const roomIdRef = useRef<string | null>(null);
+  const messagesRef = useRef<ChatMessage[]>([]);
+  const knownMessageIdsRef = useRef(new Set<string>());
   const [isOpen, setIsOpen] = useState(false);
   const [room, setRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [unreadAdminReplies, setUnreadAdminReplies] = useState(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
+  isOpenRef.current = isOpen;
+
+  const syncMessages = useCallback(
+    (incoming: ChatMessage[], notifyIfClosed = false) => {
+      const newAdminReplies = incoming.filter(
+        (message) =>
+          !knownMessageIdsRef.current.has(message._id) &&
+          message.sender === "admin",
+      ).length;
+      incoming.forEach((message) =>
+        knownMessageIdsRef.current.add(message._id),
+      );
+
+      if (notifyIfClosed && !isOpenRef.current && newAdminReplies > 0) {
+        setUnreadAdminReplies((count) => count + newAdminReplies);
+      }
+
+      const mergedMessages = mergeChatMessages(messagesRef.current, incoming);
+      messagesRef.current = mergedMessages;
+      setMessages(mergedMessages);
+
+      const roomId = roomIdRef.current;
+      const latestMessage = mergedMessages[mergedMessages.length - 1];
+      if (isOpenRef.current && roomId && latestMessage) {
+        localStorage.setItem(lastSeenMessageKey(roomId), latestMessage._id);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const storedRoomId = localStorage.getItem("chatRoomId");
+    if (!storedRoomId) return;
+
+    let isMounted = true;
+    getMessages(storedRoomId)
+      .then((res) => {
+        if (!isMounted || isOpenRef.current) return;
+
+        roomIdRef.current = storedRoomId;
+        syncMessages(res.data);
+
+        const lastSeenId = localStorage.getItem(
+          lastSeenMessageKey(storedRoomId),
+        );
+        const lastSeenIndex = lastSeenId
+          ? res.data.findIndex((message) => message._id === lastSeenId)
+          : -1;
+        const unreadMessages = res.data
+          .slice(lastSeenIndex + 1)
+          .filter((message) => message.sender === "admin");
+
+        setUnreadAdminReplies(unreadMessages.length);
+        setRoom({
+          _id: storedRoomId,
+          guestId: "",
+          status: "open",
+          unreadByAdmin: 0,
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [syncMessages]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -230,13 +308,14 @@ export default function ChatWidget() {
         if (!isMounted) return;
 
         const roomData = roomRes.data;
+        roomIdRef.current = roomData._id;
         setRoom(roomData);
         localStorage.setItem("chatRoomId", roomData._id);
 
         const msgRes = await getMessages(roomData._id);
         if (!isMounted) return;
 
-        setMessages(msgRes.data);
+        syncMessages(msgRes.data);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -247,25 +326,28 @@ export default function ChatWidget() {
     return () => {
       isMounted = false;
     };
-  }, [isOpen]);
+  }, [isOpen, syncMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   useEffect(() => {
-    if (!room?._id || !isOpen) return;
+    if (!room?._id) return;
 
     const socket = createSocket();
     socketRef.current = socket;
 
     socket.on("connect", () => {
       socket.emit("join_room", room._id);
+      getMessages(room._id)
+        .then((res) => syncMessages(res.data, true))
+        .catch(() => {});
     });
 
     socket.on("new_message", (message: ChatMessage) => {
       if (message.roomId !== room._id) return;
-      setMessages((prev) => [...prev, message]);
+      syncMessages([message], true);
     });
 
     return () => {
@@ -273,7 +355,23 @@ export default function ChatWidget() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [room?._id, isOpen]);
+  }, [room?._id, syncMessages]);
+
+  const handleToggleChat = () => {
+    const willOpen = !isOpenRef.current;
+    isOpenRef.current = willOpen;
+    if (willOpen) {
+      setUnreadAdminReplies(0);
+      const latestMessage = messagesRef.current[messagesRef.current.length - 1];
+      if (roomIdRef.current && latestMessage) {
+        localStorage.setItem(
+          lastSeenMessageKey(roomIdRef.current),
+          latestMessage._id,
+        );
+      }
+    }
+    setIsOpen(willOpen);
+  };
 
   const handleSend = (event: FormEvent) => {
     event.preventDefault();
@@ -396,9 +494,9 @@ export default function ChatWidget() {
       )}
 
       <button
-  onClick={() => setIsOpen((v) => !v)}
+  onClick={handleToggleChat}
   className="
-    flex h-24 w-24 items-center justify-center
+    relative flex h-24 w-24 items-center justify-center
     rounded-full
     bg-transparent
     border border-white/10
@@ -425,6 +523,11 @@ export default function ChatWidget() {
       group-hover:drop-shadow-[0_10px_24px_rgba(255,255,255,0.18)]"
     draggable={false}
   />
+  {unreadAdminReplies > 0 && !isOpen && (
+    <span className="absolute right-1 top-1 grid h-7 min-w-7 place-items-center rounded-full border-2 border-white bg-red-600 px-1 text-xs font-bold text-white shadow-lg">
+      {unreadAdminReplies > 99 ? "99+" : unreadAdminReplies}
+    </span>
+  )}
 </button>
     </div>
   );

@@ -5,6 +5,9 @@ import { store } from "./app/store";
 import App from "./App";
 import "./styles/tailwind.css";
 import { CartProvider } from "./context/CartContext";
+import { injectStore } from "./api/baseApi";
+
+injectStore(store);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

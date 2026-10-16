@@ -27,3 +27,8 @@ export interface ChangePasswordRequest {
   newPassword: string;
   confirmPassword: string;
 }
+
+export interface RefreshTokenResponse {
+  message: string;
+  accessToken: string;
+}
