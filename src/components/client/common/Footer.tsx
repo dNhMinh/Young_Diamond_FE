@@ -10,7 +10,7 @@ const SOCIAL_LINKS = {
 
 const AGENT_ROUTE = "/agent-request";
 const SUPPORT_EMAIL = "youngdiamond.jewels@gmail.com";
-const DESIGNER_EMAIL = "dnminh1401@gmail.com";
+// const DESIGNER_EMAIL = "dnminh1401@gmail.com";
 
 function buildGmailComposeLink(email: string) {
   return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}`;
@@ -227,7 +227,7 @@ export default function Footer() {
           <div className="text-sm text-neutral-500 flex items-center gap-4"></div>
         </div>
 
-        <div className="mt-3 pt-3 border-t border-white/10">
+        {/* <div className="mt-3 pt-3 border-t border-white/10">
           <div className="flex flex-col md:flex-row md:items-center md:justify-center gap-1 md:gap-3 text-xs text-neutral-600">
             <span>
               Designed by{" "}
@@ -243,7 +243,7 @@ export default function Footer() {
               Contact: {DESIGNER_EMAIL}
             </a>
           </div>
-        </div>
+        </div> */}
       </div>
     </footer>
   );
