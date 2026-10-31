@@ -7,10 +7,11 @@ import type {
 } from "../../types/order";
 
 export const ordersApi = {
-  create: async (payload: OrderCreatePayload) => {
+  create: async (payload: OrderCreatePayload, idempotencyKey: string) => {
     const res = await httpPublic.post<ApiResponse<OrderCreateResponse>>(
       "/orders/create",
       payload,
+      { headers: { "Idempotency-Key": idempotencyKey } },
     );
     return res.data;
   },

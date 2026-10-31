@@ -15,6 +15,7 @@ import type {
   PaymentMethod as SettingsPaymentMethod,
   BankAccount,
 } from "../../../api/client/settings.api";
+import { useIdempotencyKey } from "../../../hooks/useIdempotencyKey";
 
 type PaymentMethod = "cod" | "bank_transfer";
 type ApiErrorResponse = { message?: string };
@@ -78,6 +79,9 @@ export default function CheckoutPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
+
+  // idempotency key: getKey() + signature
+  const { getKey, resetKey } = useIdempotencyKey();
 
   // ✅ fetch settings + payment methods (1 lần)
   useEffect(() => {
@@ -321,9 +325,11 @@ export default function CheckoutPage() {
       shippingCarrier: DEFAULT_SHIPPING_CARRIER,
       shippingCarrierCode: DEFAULT_SHIPPING_CARRIER,
     };
+    const key = getKey(payload);
 
     try {
-      const res = await ordersApi.create(payload);
+      const res = await ordersApi.create(payload, key);
+      resetKey(); // reset key sau khi đặt hàng thành công
       const code = (res.data as OrderCreateResponse).orderCode;
 
       clear();
@@ -363,7 +369,8 @@ export default function CheckoutPage() {
           </h1>
           <Link
             to="/cart"
-            className="text-sm underline text-neutral-700 hover:text-black">
+            className="text-sm underline text-neutral-700 hover:text-black"
+          >
             ← Quay lại giỏ hàng
           </Link>
         </div>
@@ -524,7 +531,8 @@ export default function CheckoutPage() {
                                 <select
                                   value={selectedBank?._id || ""}
                                   onChange={(e) => onChangeBank(e.target.value)}
-                                  className="h-11 px-3 rounded-lg border border-black/15 bg-white outline-none focus:border-black cursor-pointer">
+                                  className="h-11 px-3 rounded-lg border border-black/15 bg-white outline-none focus:border-black cursor-pointer"
+                                >
                                   {loadingBanks ? (
                                     <option value="">
                                       Đang tải danh sách...
@@ -582,7 +590,8 @@ export default function CheckoutPage() {
                                     target="_blank"
                                     rel="noreferrer"
                                     title="Bấm để mở QR lớn"
-                                    className="block">
+                                    className="block"
+                                  >
                                     <img
                                       src={qrUrl}
                                       alt="QR chuyển khoản"
@@ -652,7 +661,8 @@ export default function CheckoutPage() {
                                 }
                                 aria-disabled={
                                   bankConfirmed || bankAccounts.length === 0
-                                }>
+                                }
+                              >
                                 {bankConfirmed
                                   ? "Đã xác nhận chuyển khoản"
                                   : "Xác nhận chuyển khoản thành công"}
@@ -696,7 +706,8 @@ export default function CheckoutPage() {
                                   uploading
                                     ? "border-black/10 bg-black/5 text-black/40 cursor-not-allowed"
                                     : "border-black/20 hover:border-black/40 hover:bg-black/5",
-                                ].join(" ")}>
+                                ].join(" ")}
+                              >
                                 {uploading
                                   ? "Đang upload..."
                                   : "Chọn ảnh chứng từ"}
@@ -739,7 +750,8 @@ export default function CheckoutPage() {
                                       setProofUrl("");
                                       setProofName("");
                                     }}
-                                    className="mt-1 text-xs underline text-neutral-600 hover:text-black">
+                                    className="mt-1 text-xs underline text-neutral-600 hover:text-black"
+                                  >
                                     Xoá ảnh
                                   </button>
                                 </div>
@@ -807,7 +819,8 @@ export default function CheckoutPage() {
                   !canSubmit || submitting || uploading
                     ? "bg-black/20 text-black/50 cursor-not-allowed"
                     : "bg-black text-white hover:opacity-95",
-                ].join(" ")}>
+                ].join(" ")}
+              >
                 {submitting ? "Đang đặt hàng..." : "Đặt hàng"}
               </button>
 
@@ -826,7 +839,8 @@ export default function CheckoutPage() {
                 {state.items.map((it) => (
                   <div
                     key={`${it.productId}-${it.sizeId ?? "na"}-${it.color ?? "na"}`}
-                    className="flex gap-3">
+                    className="flex gap-3"
+                  >
                     <div className="h-14 w-14 rounded-lg overflow-hidden border border-black/10 bg-neutral-50 shrink-0">
                       <img
                         src={it.image}
